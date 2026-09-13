@@ -1,0 +1,301 @@
+name: AUTOPULSE_DQ_INTELLIGENCE
+tables:
+  - name: DQ_RESULTS
+    description: "The table contains records of data quality check results produced by automated pipeline executions. Each record captures the outcome of a single rule applied to a specific source table and column, including pass/fail row counts, failure percentage, and a summary of failures."
+    base_table:
+      database: AUTOPULSE_AI
+      schema: DQ
+      table: DQ_RESULTS
+    unique_keys:
+      - columns:
+          - RUN_ID
+      - columns:
+          - DQ_RESULT_ID
+    dimensions:
+      - name: DQ_RESULT_ID
+        description: Unique identifier for an individual data quality evaluation result.
+        expr: DQ_RESULT_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+        sample_values:
+          - 20260831220301_BS_SUP-009_1788238986310
+          - 20260831220429_ZIP_ZIP-005_1788239071885
+          - 20260831215634_BT_BTP-001_1788238594834
+      - name: FAILURE_SUMMARY
+        description: Summary of the data quality failures identified by the rule.
+        expr: FAILURE_SUMMARY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+        sample_values:
+          - "BATTERY_TYPE_ID_UNIQUE: 0 rows failed out of 5 rows checked."
+          - "BATTERY_TYPE_ID_POSITIVE: 0 rows failed out of 5 rows checked."
+          - "RECORD_COUNT_UNIQUE: 0 rows failed out of 365 rows checked."
+      - name: RULE_ID
+        description: Identifier of the DQ rule that produced this result.
+        expr: RULE_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+        sample_values:
+          - BTP-003
+          - BTP-002
+          - SUP-005
+      - name: RUN_ID
+        description: Identifier of the DQ pipeline execution recorded in OPS.PIPELINE_RUNS.
+        expr: RUN_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+        sample_values:
+          - 20260831220301_BS
+          - 20260831215634_BT
+          - 20260831220253_BC
+      - name: SOURCE_COLUMN
+        description: "Source column evaluated by the DQ rule, when applicable."
+        expr: SOURCE_COLUMN
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+        sample_values:
+          - ID
+          - BATTERY_TYPE
+          - NAME
+      - name: SOURCE_TABLE
+        description: RAW source table evaluated by the DQ rule.
+        expr: SOURCE_TABLE
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+        sample_values:
+          - BATTERY_TYPE_RAW
+          - BATTERY_SUPPLIER_RAW
+          - BATTERY_COMPONENTS_RAW
+      - name: STATUS
+        description: "Overall result of the DQ rule execution, such as PASS, FAIL, or WARNING."
+        expr: STATUS
+        data_type: VARCHAR(20)
+        access_modifier: public_access
+        sample_values:
+          - PASS
+    facts:
+      - name: FAILURE_PERCENTAGE
+        description: Percentage of checked records that failed the DQ rule.
+        expr: FAILURE_PERCENTAGE
+        data_type: "NUMBER(7,4)"
+        access_modifier: public_access
+        sample_values:
+          - "0.0000"
+      - name: ROWS_CHECKED
+        description: Number of records evaluated by the DQ rule.
+        expr: ROWS_CHECKED
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+      - name: ROWS_FAILED
+        description: Number of records that failed the DQ rule.
+        expr: ROWS_FAILED
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+      - name: ROWS_PASSED
+        description: Number of records that passed the DQ rule.
+        expr: ROWS_PASSED
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+    time_dimensions:
+      - name: CHECKED_AT
+        description: Timestamp when the data quality check was executed.
+        expr: CHECKED_AT
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+        sample_values:
+          - 2026-08-31 22:03:53.648000+00:00
+          - 2026-08-31 23:42:19.359000+00:00
+          - 2026-08-31 21:56:35.307000+00:00
+      - name: CREATED_AT
+        description: Timestamp when the DQ result record was created.
+        expr: CREATED_AT
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+        sample_values:
+          - 2026-08-31 21:56:35.307000+00:00
+          - 2026-08-31 21:56:37.436000+00:00
+          - 2026-08-31 21:56:38.217000+00:00
+  - name: DQ_RULES
+    description: "The table contains records of data quality rules applied to database tables and columns. Each record defines a specific rule, including its type, the source it targets, the SQL logic used to evaluate it, and whether the rule is currently active."
+    base_table:
+      database: AUTOPULSE_AI
+      schema: DQ
+      table: DQ_RULES
+    primary_key:
+      columns:
+        - RULE_ID
+    dimensions:
+      - name: IS_ACTIVE
+        description: Indicates whether the rule is active and should be executed
+        expr: IS_ACTIVE
+        data_type: BOOLEAN
+        access_modifier: public_access
+        sample_values:
+          - "TRUE"
+      - name: RULE_ID
+        description: Unique identifier for the data quality rule
+        expr: RULE_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+        sample_values:
+          - VEV-019
+          - VEV-028
+          - VEV-001
+      - name: RULE_NAME
+        description: Name of the data quality rule
+        expr: RULE_NAME
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+        sample_values:
+          - VIN_NOT_NULL
+          - LONGITUDE_VALID
+          - CAR_ID_POSITIVE
+      - name: RULE_SQL
+        description: SQL condition that must evaluate to TRUE for a record to pass the rule
+        expr: RULE_SQL
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+        sample_values:
+          - CAR_ID > 0
+          - MODEL_YEAR IS NOT NULL
+          - TRIM(TYPE) <> ''
+      - name: RULE_TYPE
+        description: "Type of data quality rule: NOT_NULL, UNIQUE, RANGE, FORMAT, DOMAIN, REFERENTIAL, or DUPLICATE"
+        expr: RULE_TYPE
+        data_type: VARCHAR(50)
+        access_modifier: public_access
+        sample_values:
+          - FORMAT
+          - NOT_NULL
+          - RANGE
+      - name: SOURCE_COLUMN
+        description: Source column associated with the rule; used by UNIQUE rules
+        expr: SOURCE_COLUMN
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+        sample_values:
+          - MODEL_YEAR
+          - CAR_ID
+          - VIN
+      - name: SOURCE_TABLE
+        description: RAW source table on which the rule is executed
+        expr: SOURCE_TABLE
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+        sample_values:
+          - VEHICLE_EVENTS_RAW
+          - BATTERY_COMPONENTS_RAW
+          - DTC_BATTERY_ERROR_CODES_RAW
+  - name: REJECTED_RECORDS
+    description: "The table contains records of data quality rejections, capturing source records that failed validation during processing. Each record identifies the originating source and the specific rule that triggered the rejection, along with the reason for failure. Records also track reprocessing activity, including status, attempts, and outcomes for resubmitted data."
+    base_table:
+      database: AUTOPULSE_AI
+      schema: DQ
+      table: REJECTED_RECORDS
+    dimensions:
+      - name: RECORD_DATA
+        description: Complete rejected source record stored as semi-structured data so the original record can be inspected and reprocessed.
+        expr: RECORD_DATA
+        data_type: VARIANT
+        access_modifier: public_access
+      - name: RECORD_KEY
+        description: "Business or source key identifying the rejected record, such as VIN, CAR_ID, PART_ID, or supplier ID."
+        expr: RECORD_KEY
+        data_type: VARCHAR(500)
+        access_modifier: public_access
+      - name: REJECTED_RECORD_ID
+        description: Unique identifier for the rejected record.
+        expr: REJECTED_RECORD_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+      - name: REJECTION_REASON
+        description: Detailed explanation of why the record failed the data quality check.
+        expr: REJECTION_REASON
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: REPROCESS_ATTEMPTS
+        description: Number of times the rejected record has been attempted for reprocessing.
+        expr: REPROCESS_ATTEMPTS
+        data_type: "NUMBER(10,0)"
+        access_modifier: public_access
+      - name: REPROCESS_NOTES
+        description: Notes describing corrections or actions taken during reprocessing.
+        expr: REPROCESS_NOTES
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: REPROCESS_STATUS
+        description: "Current reprocessing status, such as PENDING, CORRECTED, RESUBMITTED, ACCEPTED, or PERMANENTLY_REJECTED."
+        expr: REPROCESS_STATUS
+        data_type: VARCHAR(30)
+        access_modifier: public_access
+      - name: RULE_ID
+        description: DQ rule that caused the record to be rejected.
+        expr: RULE_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+      - name: RULE_NAME
+        description: Name of the DQ rule that caused the rejection.
+        expr: RULE_NAME
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+      - name: RUN_ID
+        description: Identifier of the DQ pipeline execution that rejected the record.
+        expr: RUN_ID
+        data_type: VARCHAR(100)
+        access_modifier: public_access
+      - name: SOURCE_FILE_NAME
+        description: Name of the source file from which the rejected record originated.
+        expr: SOURCE_FILE_NAME
+        data_type: VARCHAR(500)
+        access_modifier: public_access
+      - name: SOURCE_ROW_NUMBER
+        description: Original row number of the rejected record in the source file when available.
+        expr: SOURCE_ROW_NUMBER
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+      - name: SOURCE_TABLE
+        description: RAW source table associated with the rejected record.
+        expr: SOURCE_TABLE
+        data_type: VARCHAR(200)
+        access_modifier: public_access
+    time_dimensions:
+      - name: CREATED_AT
+        description: Timestamp when the rejected record was created.
+        expr: CREATED_AT
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+      - name: REJECTED_AT
+        description: Timestamp when the record was rejected.
+        expr: REJECTED_AT
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+      - name: REPROCESSED_AT
+        description: Timestamp when the rejected record was last reprocessed.
+        expr: REPROCESSED_AT
+        data_type: TIMESTAMP_NTZ(9)
+        access_modifier: public_access
+relationships:
+  - name: DQ_RESULTS_TO_DQ_RULES
+    left_table: DQ_RESULTS
+    right_table: DQ_RULES
+    relationship_columns:
+      - left_column: RULE_ID
+        right_column: RULE_ID
+    join_type: left_outer
+  - name: REJECTED_RECORDS_TO_DQ_RULES
+    left_table: REJECTED_RECORDS
+    right_table: DQ_RULES
+    relationship_columns:
+      - left_column: RULE_ID
+        right_column: RULE_ID
+    join_type: left_outer
+  - name: REJECTED_RECORDS_TO_DQ_RUNS
+    left_table: REJECTED_RECORDS
+    right_table: DQ_RESULTS
+    relationship_columns:
+      - left_column: RUN_ID
+        right_column: RUN_ID
+    join_type: left_outer
+module_custom_instructions:
+  sql_generation: "Use the latest DQ run when the user asks about current or latest data quality. Distinguish between DQ checks, failed records, and rejected records. Do not double-count records. Use DQ_RESULTS as the primary source for DQ check status and REJECT_TABLE for record-level rejection details. Clearly identify the affected table, column, check, status, severity, and failed/rejected record count when available. For trend questions, use the DQ run ID or check timestamp. Do not invent values or treat a failed check as proof that every record was rejected. When analyzing impact on battery RCA or prediction, clearly distinguish observed DQ results from potential downstream impact. Round percentages to two decimal places."
+  question_categorization: "Focus on AutoPulse data-quality questions involving DQ checks, failed checks, rejected records, data-quality status, severity, affected tables or columns, DQ trends, and the potential impact of data-quality issues on battery RCA and prediction analytics. Do not answer questions unrelated to AutoPulse data quality."

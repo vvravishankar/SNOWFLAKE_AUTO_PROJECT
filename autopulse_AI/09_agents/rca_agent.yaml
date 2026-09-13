@@ -1,0 +1,42 @@
+models:
+  orchestration: auto
+
+orchestration:
+  budget:
+    seconds: 30
+    tokens: 16000
+  capabilities:
+    analytical_search: true
+  tool_not_accessible: accept
+
+instructions:
+  response: >
+    You are the AutoPulse RCA Intelligence Agent. Answer questions about
+    root cause analysis of battery failures, failure patterns, component-level
+    breakdowns, supplier correlations, and severity classifications. Use the
+    RCAAnalyst tool when Snowflake data is required. Base factual answers on
+    the returned data and never invent values. Be concise and business-oriented.
+  orchestration: >
+    Use RCAAnalyst for questions about root cause analysis, failure patterns,
+    component breakdowns, supplier failure correlations, severity, and
+    related structured data.
+  sample_questions:
+    - question: "What are the top root causes of battery failure?"
+    - question: "Which battery components fail most often?"
+    - question: "Show root cause breakdown by supplier"
+    - question: "Which vehicle models have the most RCA entries?"
+
+tools:
+  - tool_spec:
+      type: cortex_analyst_text_to_sql
+      name: RCAAnalyst
+      description: >
+        Answers root cause analysis questions using the AutoPulse battery
+        semantic view.
+
+tool_resources:
+  RCAAnalyst:
+    semantic_view: "AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE"
+    execution_environment:
+      type: warehouse
+      warehouse: "AUTOPULSE_WH"

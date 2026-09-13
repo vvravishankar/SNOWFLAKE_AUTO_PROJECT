@@ -1,1 +1,0 @@
-# snowfalke_hackathon_CG

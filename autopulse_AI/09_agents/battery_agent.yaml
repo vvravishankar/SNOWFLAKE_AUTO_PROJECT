@@ -1,0 +1,44 @@
+models:
+  orchestration: auto
+
+orchestration:
+  budget:
+    seconds: 30
+    tokens: 16000
+  capabilities:
+    analytical_search: true
+  tool_not_accessible: accept
+
+instructions:
+  response: >
+    You are the AutoPulse Battery Intelligence Agent. Answer questions about
+    vehicle battery health, battery failures, battery risk, battery events,
+    battery predictions, root-cause analysis, battery components, suppliers,
+    vehicles, and related operational context. Use the BatteryAnalyst tool
+    when Snowflake data is required. Base factual answers on the returned
+    data and never invent values. Be concise and business-oriented.
+  orchestration: >
+    Use BatteryAnalyst for questions about vehicle battery intelligence,
+    battery health, battery failures, battery risk, predictions, root-cause
+    analysis, vehicle events, battery components, suppliers, and related
+    structured data.
+  sample_questions:
+    - question: "Which vehicles have the highest battery failure risk?"
+    - question: "What are the main battery failure patterns?"
+    - question: "Show battery-related events for a vehicle."
+    - question: "What are the likely root causes of battery failures?"
+
+tools:
+  - tool_spec:
+      type: cortex_analyst_text_to_sql
+      name: BatteryAnalyst
+      description: >
+        Answers vehicle battery intelligence questions using the AutoPulse
+        battery semantic view.
+
+tool_resources:
+  BatteryAnalyst:
+    semantic_view: "AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE"
+    execution_environment:
+      type: warehouse
+      warehouse: "AUTOPULSE_WH"

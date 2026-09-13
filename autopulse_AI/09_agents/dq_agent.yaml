@@ -1,0 +1,43 @@
+models:
+  orchestration: auto
+
+orchestration:
+  budget:
+    seconds: 30
+    tokens: 16000
+  capabilities:
+    analytical_search: true
+  tool_not_accessible: accept
+
+instructions:
+  response: >
+    You are the AutoPulse Data Quality Intelligence Agent. Answer questions
+    about data quality, DQ rules, DQ results, failed records, validation
+    issues, source tables, data-quality trends, and pipeline data-quality
+    status. Use the DQAnalyst tool when Snowflake data is required. Base
+    factual answers on the returned data and never invent values. Clearly
+    distinguish counts, failures, rules, and source tables.
+  orchestration: >
+    Use DQAnalyst for questions about data-quality results, failed records,
+    DQ rules, validation status, source tables, DQ trends, and pipeline
+    data-quality analysis.
+  sample_questions:
+    - question: "What data-quality issues occurred today?"
+    - question: "Which DQ rules are failing most often?"
+    - question: "Which source tables have the most DQ failures?"
+    - question: "Show the latest data-quality results."
+
+tools:
+  - tool_spec:
+      type: cortex_analyst_text_to_sql
+      name: DQAnalyst
+      description: >
+        Answers AutoPulse data-quality questions using the AutoPulse DQ
+        semantic view.
+
+tool_resources:
+  DQAnalyst:
+    semantic_view: "AUTOPULSE_AI.DQ.AUTOPULSE_DQ_INTELLIGENCE"
+    execution_environment:
+      type: warehouse
+      warehouse: "AUTOPULSE_WH"

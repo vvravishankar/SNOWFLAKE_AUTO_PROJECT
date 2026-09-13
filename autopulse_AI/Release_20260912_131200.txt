@@ -1,0 +1,193 @@
+================================================================
+AUTOPULSE AI — RELEASE NOTES
+================================================================
+Version:    v1.0.0
+Deployed:   2026-09-12 12:42 – 13:12 UTC
+Account:    xeb18645
+User:       RAVI_SHANKAR
+Role:       ACCOUNTADMIN
+Warehouse:  AUTOPULSE_WH (X-SMALL)
+Method:     CoCo (Cortex Code) interactive deployment
+================================================================
+
+DEPLOYMENT STEPS
+----------------------------------------------------------------
+Step  | Name                    | Status | Time  | Objects Created
+------|-------------------------|--------|-------|------------------------------------------
+  1   | RBAC & Infrastructure   | PASS   | ~90s  | 1 WH, 1 DB, 5 schemas, 5 roles, 3 users
+  2   | Git Integration         | SKIP   | —     | CLI-only (02_Git/)
+  3   | RAW Layer               | PASS   | ~60s  | 1 file format, 1 stage, 11 tables, 11 pipes
+  4   | CLEAN Layer             | PASS   | ~15s  | 11 tables
+  5   | DQ UDF                  | PASS   | ~5s   | 1 SQL UDF (NORMALIZE_EVENT_DATE)
+  6   | DQ Procedure            | PASS   | ~10s  | 1 JS procedure (RUN_DQ_FW, 927 lines)
+  7   | DQ Rules Load           | PASS   | ~20s  | 148 rules loaded from CSV
+  8   | DQ Infrastructure       | PASS   | ~30s  | 3 tables, 11 streams, 11 tasks (1 min)
+  9   | Curated Layer           | PASS   | ~40s  | 4 dynamic tables (1/2/3/4 min lag)
+ 10   | OPS Layer               | PASS   | ~30s  | 6 cost tables, 1 proc, 1 task (1 min)
+ 11   | Semantic Views          | PASS   | ~45s  | 3 semantic views (Battery, DQ, OPS)
+ 12   | Cortex Agents           | PASS   | ~15s  | 2 agents (Battery, DQ Intelligence)
+ 13   | Final Verification      | PASS   | ~10s  | All object counts validated
+------|-------------------------|--------|-------|------------------------------------------
+TOTAL |                         | PASS   | ~6min | Full platform deployed
+----------------------------------------------------------------
+
+OBJECT SUMMARY
+----------------------------------------------------------------
+Category            | Count | Details
+--------------------|-------|--------------------------------------
+Warehouse           |     1 | AUTOPULSE_WH (X-SMALL, 5-min suspend)
+Database            |     1 | AUTOPULSE_AI
+Schemas             |     5 | RAW, CLEAN, DQ, CURATED, OPS
+Roles               |     5 | COMMON, ETL, AI, PYTHON, VIEWER
+Users               |     3 | SHAREENKHAN, PRASHANTPALIWAL, VEERESHGODUGU
+RAW Tables          |    11 | Source landing tables
+CLEAN Tables        |    11 | DQ-validated tables
+DQ Tables           |     3 | DQ_RULES, DQ_RESULTS, REJECTED_RECORDS
+OPS Tables          |     7 | 6 cost tables + PIPELINE_RUNS
+Dynamic Tables      |     4 | 360, Events, RCA, Prediction
+Pipes               |    11 | AUTO_INGEST from AUTOPULSE_RAW_STAGE
+Streams             |    11 | Append-only on RAW tables
+Tasks (DQ)          |    11 | Serverless, 1-min schedule (demo)
+Tasks (OPS)         |     1 | OPS_COST_REFRESH, 1-min (demo)
+UDF                 |     1 | NORMALIZE_EVENT_DATE
+Stored Procedure    |     1 | RUN_DQ_FW (JavaScript)
+DQ Rules            |   148 | Loaded from DQ_Rules.CSV
+Semantic Views      |     3 | Battery, DQ, OPS Intelligence
+Cortex Agents       |     2 | Battery Agent, DQ Intelligence Agent
+File Format         |     1 | CSV_FILE_FORMAT
+Stage               |     1 | AUTOPULSE_RAW_STAGE (internal)
+--------------------|-------|--------------------------------------
+
+DEMO TIMING (non-production)
+----------------------------------------------------------------
+Object                          | Production  | Demo
+--------------------------------|-------------|--------
+11 DQ Tasks                     | 600 min     | 1 min
+DT: VEHICLE_BATTERY_360        | 600 min     | 1 min
+DT: VEHICLE_EVENT_CONTEXT       | 610 min     | 2 min
+DT: VEHICLE_BATTERY_RCA         | 620 min     | 3 min
+DT: VEHICLE_BATTERY_PREDICTION  | 630 min     | 4 min
+OPS_COST_REFRESH_TASK            | AFTER chain | 1 min (standalone)
+----------------------------------------------------------------
+
+DATA FLOW
+----------------------------------------------------------------
+CSV Files → @AUTOPULSE_RAW_STAGE
+         → Snowpipes → RAW tables (11)
+         → DQ Streams detect new rows (11)
+         → DQ Tasks call RUN_DQ_FW() (11)
+              → DQ_RESULTS (pass/fail stats)
+              → REJECTED_RECORDS (quarantine)
+              → CLEAN tables (validated rows)
+         → Dynamic Tables auto-refresh from CLEAN (4)
+              → VEHICLE_BATTERY_360
+              → VEHICLE_EVENT_CONTEXT
+              → VEHICLE_BATTERY_RCA
+              → VEHICLE_BATTERY_PREDICTION
+         → Semantic Views expose business metrics (3)
+         → Cortex Agents answer questions via Analyst (2)
+         → Streamlit Dashboard visualizes everything
+----------------------------------------------------------------
+
+DATA FILES UPLOADED
+----------------------------------------------------------------
+File                                          | Size
+----------------------------------------------|----------
+BATTERY_COMPONENTS.csv                         | 528 B
+BATTERY_SUPPLIER.csv                           | 336 B
+BATTERY_TYPE.csv                               | 144 B
+DATE_VALUES_YEAR.csv                           | 5.4 KB
+DTC_BATTERY_ERROR_CODES.csv                    | 288 B
+PART_BATTERY.csv                               | 11.4 KB
+STATES_AND_ABBREVIATIONS.csv                   | 784 B
+VEHICLES.csv                                   | 803 KB
+VEHICLES_ZIPCODES_DISTANCES_DATES_WEATHER_DTC  | 51.9 MB
+WEATHER_DATA.csv                               | 13.3 MB
+ZIP_CODE_INFO.csv                              | 29.3 KB
+----------------------------------------------|----------
+
+PROJECT STRUCTURE
+----------------------------------------------------------------
+hackathon_dl/
+├── DEPLOYMENT_PROMPT.md         ← Reusable deployment prompt
+├── TEARDOWN.sql                 ← Full teardown script
+├── Release_20260912_131200.txt  ← This file
+├── README.md
+├── docs/
+│   └── Architect.png
+├── 00_deploy/                   ← Consolidated deploy scripts
+│   ├── 01_pre_validation.sql
+│   ├── 02_environment.sql
+│   ├── 03_deploy.sql
+│   ├── 04_post_verify.sql
+│   ├── 05_teardown.sql
+│   ├── 06_rollback.sql
+│   └── RELEASE_NOTES.md
+├── 01_warehouse_and_rbac/
+│   └── User_Role.sql
+├── 02_Git/                      ← CLI-only (not run in CoCo)
+│   └── setup_git_integration.sql
+├── 03_raw_layer/
+│   └── Raw_Infra.sql
+├── 04_clean_layer/
+│   └── Clean_Infra.sql
+├── 05_dq_framework/
+│   ├── NORMALIZE_EVENT_DATE.sql
+│   ├── RUN_DQ_FW.sql
+│   ├── DQ_Infra.sql
+│   └── DQ_Rules.CSV
+├── 06_curated_layer/
+│   └── Curated_Infra.sql
+├── 07_ops_layer/
+│   └── Streamlit_cost.sql
+├── 08_semantic_views/
+│   ├── battery_intelligence.sv.yaml
+│   ├── dq_intelligence.sv.yaml
+│   └── ops_intelligence.sv.yaml
+├── 09_agents/
+│   ├── AUTOPULSE_AGENTS_DEPLOY.sql
+│   ├── battery_agent.yaml
+│   ├── dq_agent.yaml
+│   ├── ops_agent.yaml
+│   ├── rca_agent.yaml
+│   └── vehicle_quality_agent.yaml
+└── 10_dashboard/
+    ├── snowflake.yml
+    ├── pyproject.toml
+    └── streamlit_app.py
+
+KNOWN ISSUES
+----------------------------------------------------------------
+1. OPS cost tables are populated but not consumed by the current
+   Streamlit dashboard (it queries ACCOUNT_USAGE directly).
+2. ACCOUNT_USAGE views have ~2 hour latency — OPS cost data
+   won't appear immediately after deployment.
+3. Some pipe column mappings may need adjustment for specific
+   CSV formats (e.g. DATE_VALUES_YEAR, STATES_AND_ABBREVIATIONS).
+
+NEXT STEPS
+----------------------------------------------------------------
+1. Data is already uploaded to @AUTOPULSE_AI.RAW.AUTOPULSE_RAW_STAGE
+2. Wait ~5 minutes for pipeline to flow through
+3. Deploy Streamlit app from hackathon_dl/10_dashboard/
+4. Verify all dashboard pages render with data
+
+TEARDOWN (when done)
+----------------------------------------------------------------
+Run hackathon_dl/TEARDOWN.sql or:
+
+  USE ROLE ACCOUNTADMIN;
+  DROP DATABASE IF EXISTS AUTOPULSE_AI CASCADE;
+  DROP WAREHOUSE IF EXISTS AUTOPULSE_WH;
+  DROP ROLE IF EXISTS AUTOPULSE_COMMON;
+  DROP ROLE IF EXISTS AUTOPULSE_ETL_ENGINEER;
+  DROP ROLE IF EXISTS AUTOPULSE_AI_ENGINEER;
+  DROP ROLE IF EXISTS AUTOPULSE_PYTHON_ENGINEER;
+  DROP ROLE IF EXISTS AUTOPULSE_VIEWER;
+  DROP USER IF EXISTS PRASHANTPALIWAL;
+  DROP USER IF EXISTS SHAREENKHAN;
+  DROP USER IF EXISTS VEERESHGODUGU;
+
+================================================================
+END OF RELEASE NOTES
+================================================================

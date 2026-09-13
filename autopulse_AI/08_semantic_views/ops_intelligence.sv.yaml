@@ -1,0 +1,192 @@
+name: AUTOPULSE_OPS_INTELLIGENCE
+tables:
+  - name: COST_PIPES
+    description: Snowpipe credit usage by pipe and day.
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_PIPES
+    dimensions:
+      - name: PIPE_NAME
+        expr: PIPE_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: PIPE_USAGE_DATE
+        expr: USAGE_DATE
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+    facts:
+      - name: PIPE_BYTES_INSERTED
+        expr: BYTES_INSERTED
+        data_type: FLOAT
+        access_modifier: public_access
+      - name: PIPE_CREDITS_USED
+        description: Snowpipe credits consumed.
+        expr: CREDITS_USED
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+      - name: PIPE_FILES_INSERTED
+        expr: FILES_INSERTED
+        data_type: FLOAT
+        access_modifier: public_access
+  - name: COST_SERVERLESS
+    description: Serverless DQ task credit usage by task and day.
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_SERVERLESS
+    dimensions:
+      - name: TASK_NAME
+        expr: TASK_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TASK_SCHEMA
+        expr: TASK_SCHEMA
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TASK_USAGE_DATE
+        expr: USAGE_DATE
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+    facts:
+      - name: TASK_AVG_DURATION
+        expr: TASK_AVG_DURATION
+        data_type: "NUMBER(38,2)"
+        access_modifier: public_access
+      - name: TASK_CREDITS_USED
+        description: Serverless task credits consumed.
+        expr: CREDITS_USED
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+      - name: TASK_RUN_COUNT
+        description: Number of task executions.
+        expr: TASK_RUN_COUNT
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+  - name: COST_STORAGE
+    description: Daily storage usage in terabytes.
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_STORAGE
+    dimensions:
+      - name: STORAGE_DATE
+        expr: USAGE_DATE
+        data_type: DATE
+        access_modifier: public_access
+    facts:
+      - name: FAILSAFE_TB
+        expr: FAILSAFE_TB
+        data_type: "NUMBER(38,4)"
+        access_modifier: public_access
+      - name: STAGE_TB
+        expr: STAGE_TB
+        data_type: "NUMBER(38,4)"
+        access_modifier: public_access
+      - name: STORAGE_TB
+        expr: STORAGE_TB
+        data_type: "NUMBER(38,4)"
+        access_modifier: public_access
+      - name: TOTAL_STORAGE_TB
+        description: Total storage (database + stage + failsafe) in TB.
+        expr: TOTAL_TB
+        data_type: "NUMBER(38,4)"
+        access_modifier: public_access
+  - name: COST_STREAMLIT_DDL
+    description: Streamlit deployment and configuration activity from QUERY_HISTORY. CREATE/ALTER statements are tracked as operations; they are not treated as a separate Streamlit runtime credit charge.
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_STREAMLIT_DDL
+    dimensions:
+      - name: OPERATION
+        expr: OPERATION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: OPERATION_DATE
+        expr: OPERATION_DATE
+        data_type: DATE
+        access_modifier: public_access
+      - name: ROLE_NAME
+        expr: ROLE_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: USER_NAME
+        expr: USER_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: WAREHOUSE_NAME
+        expr: WAREHOUSE_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: OPERATION_COUNT
+        description: Number of CREATE/ALTER/DROP STREAMLIT operations recorded.
+        expr: OPERATION_COUNT
+        data_type: "NUMBER(38,0)"
+        access_modifier: public_access
+  - name: COST_STREAMLIT_RUNTIME
+    description: "Hourly Streamlit container-runtime compute-pool credit usage. For AutoPulse, this captures the SYSTEM_COMPUTE_POOL_CPU runtime cost used by the Streamlit app."
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_STREAMLIT_RUNTIME
+    dimensions:
+      - name: COMPUTE_POOL_NAME
+        expr: COMPUTE_POOL_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: END_TIME
+        expr: END_TIME
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+      - name: RUNTIME_TYPE
+        expr: RUNTIME_TYPE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: START_TIME
+        expr: START_TIME
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+      - name: STREAMLIT_USAGE_DATE
+        expr: USAGE_DATE
+        data_type: DATE
+        access_modifier: public_access
+    facts:
+      - name: STREAMLIT_CREDITS_USED
+        description: Streamlit container-runtime compute-pool credits consumed.
+        expr: CREDITS_USED
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+  - name: COST_WAREHOUSE
+    description: Daily warehouse credit usage from ACCOUNT_USAGE.
+    base_table:
+      database: AUTOPULSE_AI
+      schema: OPS
+      table: COST_WAREHOUSE
+    dimensions:
+      - name: WAREHOUSE_NAME
+        expr: WAREHOUSE_NAME
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: WH_USAGE_DATE
+        expr: USAGE_DATE
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+    facts:
+      - name: WH_CREDITS_CLOUD
+        expr: CREDITS_CLOUD
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+      - name: WH_CREDITS_COMPUTE
+        expr: CREDITS_COMPUTE
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+      - name: WH_CREDITS_USED
+        description: Total warehouse credits consumed.
+        expr: CREDITS_USED
+        data_type: "NUMBER(38,9)"
+        access_modifier: public_access
+module_custom_instructions:
+  sql_generation: "Answer cost and operations questions for AutoPulse AI. Each table has its own grain and date column. COST_WAREHOUSE tracks daily warehouse credits. COST_SERVERLESS tracks per-task daily credits and run counts. COST_PIPES tracks per-pipe daily credits and file counts. COST_STORAGE tracks daily storage in TB. For total cost, sum credits from each cost table separately and present a breakdown. Include COST_STREAMLIT_RUNTIME as the Streamlit container-runtime cost. Treat COST_STREAMLIT_DDL as deployment/configuration activity counts, not as a separate runtime credit charge. Streamlit container runtime runs on the compute pool and its cost is represented by compute-pool credits. The Streamlit app also issues SQL through its query warehouse; do not attribute all warehouse credits to Streamlit unless the warehouse is dedicated to the app. For total cost, avoid double-counting the same compute-pool or warehouse usage. Round credits to 4 decimals, storage to 4 decimals. Layer mapping: RAW=pipes, DQ=serverless tasks, CURATED=warehouse (dynamic table refresh), STREAMLIT=container-runtime compute pool."
+  question_categorization: "Answer questions about AutoPulse pipeline costs, credit usage, storage trends, task execution, and pipe ingestion volumes. Decline unrelated questions."

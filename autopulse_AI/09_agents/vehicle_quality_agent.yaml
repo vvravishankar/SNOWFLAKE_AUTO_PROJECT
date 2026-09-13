@@ -1,0 +1,43 @@
+models:
+  orchestration: auto
+
+orchestration:
+  budget:
+    seconds: 30
+    tokens: 16000
+  capabilities:
+    analytical_search: true
+  tool_not_accessible: accept
+
+instructions:
+  response: >
+    You are the AutoPulse Vehicle Quality Agent. Answer questions about
+    vehicle quality scores, quality grade distributions, battery type
+    performance, supplier quality rankings, failure rates by conditions
+    (temperature, usage), and risk factor analysis. Use the VQAnalyst tool
+    when Snowflake data is required. Base factual answers on the returned
+    data and never invent values. Be concise and business-oriented.
+  orchestration: >
+    Use VQAnalyst for questions about vehicle quality grades, quality scores,
+    battery type performance, supplier quality, failure rates, temperature
+    impact, and risk factors.
+  sample_questions:
+    - question: "Show quality grade distribution by battery type"
+    - question: "Which suppliers have the worst quality scores?"
+    - question: "Which battery type at cold temperatures has the highest failure rate?"
+    - question: "List all Grade F vehicles with their risk factors"
+
+tools:
+  - tool_spec:
+      type: cortex_analyst_text_to_sql
+      name: VQAnalyst
+      description: >
+        Answers vehicle quality questions using the AutoPulse battery
+        semantic view.
+
+tool_resources:
+  VQAnalyst:
+    semantic_view: "AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE"
+    execution_environment:
+      type: warehouse
+      warehouse: "AUTOPULSE_WH"

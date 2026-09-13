@@ -1,0 +1,594 @@
+name: AUTOPULSE_BATTERY_INTELLIGENCE
+tables:
+  - name: VEHICLE_BATTERY_360
+    description: Curated vehicle and battery 360-degree business view built from DQ-validated CLEAN data
+    base_table:
+      database: AUTOPULSE_AI
+      schema: CURATED
+      table: VEHICLE_BATTERY_360
+    unique_keys:
+      - columns:
+          - CAR_ID
+          - VIN
+    dimensions:
+      - name: AMP_HOURS
+        description: Battery capacity including unit
+        expr: AMP_HOURS
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: BATTERY_AGE
+        description: Battery age derived from current year and battery manufacturing year
+        expr: BATTERY_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: BATTERY_AH
+        description: Battery capacity in amp hours
+        expr: BATTERY_AH
+        data_type: "NUMBER(3,0)"
+        access_modifier: public_access
+      - name: BATTERY_SERIAL_NUMBER
+        description: Battery serial number
+        expr: BATTERY_SERIAL_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: BATTERY_TYPE
+        description: Battery type
+        expr: BATTERY_TYPE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CAR_ID
+        description: Unique vehicle identifier
+        expr: CAR_ID
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: COUNTRY
+        description: Vehicle country
+        expr: COUNTRY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CUT_OFF_VOLTAGE
+        description: Battery cutoff voltage including unit
+        expr: CUT_OFF_VOLTAGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: DISCHARGE_CURRENT
+        description: Battery discharge current including unit
+        expr: DISCHARGE_CURRENT
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: DOORS
+        description: Number of vehicle doors
+        expr: DOORS
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: MFG_YEAR
+        description: Battery manufacturing year
+        expr: MFG_YEAR
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: MODEL_YEAR
+        description: Vehicle model year
+        expr: MODEL_YEAR
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: OVERCHARGE_PROTECTION
+        description: Overcharge protection indicator
+        expr: OVERCHARGE_PROTECTION
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: OVERCURRENT_PROTECTION
+        description: Overcurrent protection indicator
+        expr: OVERCURRENT_PROTECTION
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: PART_NUMBER
+        description: Battery part number installed in the vehicle
+        expr: PART_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RECOMMENDED_CHARGING_CURRENT_RANGE
+        description: Recommended charging current range
+        expr: RECOMMENDED_CHARGING_CURRENT_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RECOMMENDED_CHARGING_VOLTAGE_RANGE
+        description: Recommended charging voltage range
+        expr: RECOMMENDED_CHARGING_VOLTAGE_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: SIZE_LENGTH_CM
+        description: Battery size length in centimeters
+        expr: SIZE_LENGTH_CM
+        data_type: "NUMBER(2,0)"
+        access_modifier: public_access
+      - name: STATE
+        description: Vehicle state
+        expr: STATE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: STATE_AB
+        description: Vehicle state abbreviation
+        expr: STATE_AB
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: SUPPLIER
+        description: Battery supplier
+        expr: SUPPLIER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TEMP_RANGE_CELSIUS
+        description: Battery operating temperature range in Celsius
+        expr: TEMP_RANGE_CELSIUS
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TEMP_RANGE_FAHRENHEIT
+        description: Battery operating temperature range in Fahrenheit
+        expr: TEMP_RANGE_FAHRENHEIT
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TERMINAL
+        description: Battery terminal type
+        expr: TERMINAL
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VEHICLE_AGE
+        description: Vehicle age derived from current year and model year
+        expr: VEHICLE_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: VEHICLE_CONFIG
+        description: Vehicle configuration such as sedan or SUV
+        expr: VEHICLE_CONFIG
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VIN
+        description: Vehicle identification number
+        expr: VIN
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VOLTAGE_RANGE
+        description: Battery voltage range
+        expr: VOLTAGE_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+  - name: VEHICLE_BATTERY_PREDICTION
+    base_table:
+      database: AUTOPULSE_AI
+      schema: CURATED
+      table: VEHICLE_BATTERY_PREDICTION
+    unique_keys:
+      - columns:
+          - CAR_ID
+          - VIN
+          - PART_NUMBER
+    dimensions:
+      - name: BATTERY_SERIAL_NUMBER
+        expr: BATTERY_SERIAL_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CAR_ID
+        expr: CAR_ID
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: MODEL_NAME
+        expr: MODEL_NAME
+        data_type: VARCHAR(23)
+        access_modifier: public_access
+      - name: MODEL_VERSION
+        expr: MODEL_VERSION
+        data_type: VARCHAR(4)
+        access_modifier: public_access
+      - name: PART_NUMBER
+        expr: PART_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: PREDICTED_FAILURE_DAYS
+        expr: PREDICTED_FAILURE_DAYS
+        data_type: "NUMBER(3,0)"
+        access_modifier: public_access
+      - name: PREDICTED_FAILURE_FLAG
+        expr: PREDICTED_FAILURE_FLAG
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: RCA_PRIMARY_CAUSE
+        expr: RCA_PRIMARY_CAUSE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RCA_SEVERITY
+        expr: RCA_SEVERITY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RISK_LEVEL
+        expr: RISK_LEVEL
+        data_type: VARCHAR(8)
+        access_modifier: public_access
+      - name: VIN
+        expr: VIN
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: AVG_TEMP_F
+        expr: AVG_TEMP_F
+        data_type: "NUMBER(22,2)"
+        access_modifier: public_access
+      - name: BATTERY_AGE
+        expr: BATTERY_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: DTC_ERROR_EVENTS
+        description: DTC error events for prediction context.
+        expr: DTC_ERROR_EVENTS
+        data_type: "NUMBER(13,0)"
+        access_modifier: public_access
+      - name: ERROR_RATE_PCT
+        expr: ERROR_RATE_PCT
+        data_type: "NUMBER(23,2)"
+        access_modifier: public_access
+      - name: FAILURE_PROBABILITY_PCT
+        expr: FAILURE_PROBABILITY_PCT
+        data_type: "NUMBER(2,0)"
+        access_modifier: public_access
+      - name: TOTAL_DISTANCE_MILES
+        expr: TOTAL_DISTANCE_MILES
+        data_type: "NUMBER(17,2)"
+        access_modifier: public_access
+      - name: TOTAL_EVENTS
+        description: Total vehicle events for prediction context.
+        expr: TOTAL_EVENTS
+        data_type: "NUMBER(18,0)"
+        access_modifier: public_access
+      - name: VEHICLE_AGE
+        expr: VEHICLE_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+    time_dimensions:
+      - name: PREDICTION_DATE
+        expr: PREDICTION_DATE
+        data_type: DATE
+        access_modifier: public_access
+      - name: PREDICTION_TIMESTAMP
+        expr: PREDICTION_TIMESTAMP
+        data_type: TIMESTAMP_LTZ(9)
+        access_modifier: public_access
+  - name: VEHICLE_BATTERY_RCA
+    description: Curated battery-level RCA features aggregated from vehicle event context for root-cause analysis and downstream risk prediction
+    base_table:
+      database: AUTOPULSE_AI
+      schema: CURATED
+      table: VEHICLE_BATTERY_RCA
+    unique_keys:
+      - columns:
+          - CAR_ID
+          - VIN
+          - PART_NUMBER
+    dimensions:
+      - name: BATTERY_AGE
+        expr: BATTERY_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: BATTERY_AH
+        expr: BATTERY_AH
+        data_type: "NUMBER(3,0)"
+        access_modifier: public_access
+      - name: BATTERY_SERIAL_NUMBER
+        expr: BATTERY_SERIAL_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: BATTERY_TYPE
+        expr: BATTERY_TYPE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CAR_ID
+        expr: CAR_ID
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: MFG_YEAR
+        expr: MFG_YEAR
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: PART_NUMBER
+        expr: PART_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: SUPPLIER
+        expr: SUPPLIER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VEHICLE_AGE
+        expr: VEHICLE_AGE
+        data_type: "NUMBER(5,0)"
+        access_modifier: public_access
+      - name: VIN
+        expr: VIN
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: AVG_DISTANCE_MILES
+        expr: AVG_DISTANCE_MILES
+        data_type: "NUMBER(24,2)"
+        access_modifier: public_access
+      - name: AVG_TEMP_F
+        expr: AVG_TEMP_F
+        data_type: "NUMBER(22,2)"
+        access_modifier: public_access
+      - name: AVG_WIND_SPEED_MPH
+        expr: AVG_WIND_SPEED_MPH
+        data_type: "NUMBER(22,2)"
+        access_modifier: public_access
+      - name: ERROR_RATE_PCT
+        expr: ERROR_RATE_PCT
+        data_type: "NUMBER(23,2)"
+        access_modifier: public_access
+      - name: MAX_TEMP_F
+        expr: MAX_TEMP_F
+        data_type: "NUMBER(3,1)"
+        access_modifier: public_access
+      - name: MIN_TEMP_F
+        expr: MIN_TEMP_F
+        data_type: "NUMBER(3,1)"
+        access_modifier: public_access
+      - name: TOTAL_DISTANCE_MILES
+        expr: TOTAL_DISTANCE_MILES
+        data_type: "NUMBER(17,2)"
+        access_modifier: public_access
+      - name: TOTAL_PRECIPITATION_IN
+        expr: TOTAL_PRECIPITATION_IN
+        data_type: "NUMBER(15,2)"
+        access_modifier: public_access
+      - name: TOTAL_SNOWFALL_IN
+        expr: TOTAL_SNOWFALL_IN
+        data_type: "NUMBER(15,2)"
+        access_modifier: public_access
+    time_dimensions:
+      - name: FIRST_EVENT_DATE
+        expr: FIRST_EVENT_DATE
+        data_type: DATE
+        access_modifier: public_access
+      - name: LAST_EVENT_DATE
+        expr: LAST_EVENT_DATE
+        data_type: DATE
+        access_modifier: public_access
+  - name: VEHICLE_EVENT_CONTEXT
+    description: "Curated vehicle event context combining validated vehicle events, battery information, geographic reference data, and DTC information for RCA and prediction"
+    base_table:
+      database: AUTOPULSE_AI
+      schema: CURATED
+      table: VEHICLE_EVENT_CONTEXT
+    dimensions:
+      - name: AMP_HOURS
+        expr: AMP_HOURS
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: BATTERY_AH
+        expr: BATTERY_AH
+        data_type: "NUMBER(3,0)"
+        access_modifier: public_access
+      - name: BATTERY_SERIAL_NUMBER
+        expr: BATTERY_SERIAL_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: BATTERY_TYPE
+        expr: BATTERY_TYPE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CAR_ID
+        expr: CAR_ID
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: CITY
+        expr: CITY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: COUNTRY
+        expr: COUNTRY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: CUT_OFF_VOLTAGE
+        expr: CUT_OFF_VOLTAGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: DESCRIPTION
+        expr: DESCRIPTION
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: DISCHARGE_CURRENT
+        expr: DISCHARGE_CURRENT
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: DOORS
+        expr: DOORS
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: DTC_ERROR_CODE
+        expr: DTC_ERROR_CODE
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: ERROR_CODE
+        expr: ERROR_CODE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: MFG_YEAR
+        expr: MFG_YEAR
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: MODEL_YEAR
+        expr: MODEL_YEAR
+        data_type: "NUMBER(4,0)"
+        access_modifier: public_access
+      - name: OVERCHARGE_PROTECTION
+        expr: OVERCHARGE_PROTECTION
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: OVERCURRENT_PROTECTION
+        expr: OVERCURRENT_PROTECTION
+        data_type: "NUMBER(1,0)"
+        access_modifier: public_access
+      - name: PART_NUMBER
+        expr: PART_NUMBER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RECOMMENDED_CHARGING_CURRENT_RANGE
+        expr: RECOMMENDED_CHARGING_CURRENT_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: RECOMMENDED_CHARGING_VOLTAGE_RANGE
+        expr: RECOMMENDED_CHARGING_VOLTAGE_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: SIZE_LENGTH_CM
+        expr: SIZE_LENGTH_CM
+        data_type: "NUMBER(2,0)"
+        access_modifier: public_access
+      - name: STATE
+        expr: STATE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: STATE_AB
+        expr: STATE_AB
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: SUPPLIER
+        expr: SUPPLIER
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TEMP_RANGE_CELSIUS
+        expr: TEMP_RANGE_CELSIUS
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TEMP_RANGE_FAHRENHEIT
+        expr: TEMP_RANGE_FAHRENHEIT
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: TERMINAL
+        expr: TERMINAL
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VEHICLE_CONFIG
+        expr: VEHICLE_CONFIG
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VIN
+        expr: VIN
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: VOLTAGE_RANGE
+        expr: VOLTAGE_RANGE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: ZIP
+        expr: ZIP
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: ZIP_CITY
+        expr: ZIP_CITY
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+      - name: ZIP_STATE
+        expr: ZIP_STATE
+        data_type: VARCHAR(16777216)
+        access_modifier: public_access
+    facts:
+      - name: AVG_TEMP_F
+        expr: AVG_TEMP_F
+        data_type: "NUMBER(3,1)"
+        access_modifier: public_access
+      - name: AVG_WIND_SPEED_MPH
+        expr: AVG_WIND_SPEED_MPH
+        data_type: "NUMBER(3,1)"
+        access_modifier: public_access
+      - name: DEST_LAT
+        expr: DEST_LAT
+        data_type: "NUMBER(8,6)"
+        access_modifier: public_access
+      - name: DES_LONG
+        expr: DES_LONG
+        data_type: "NUMBER(8,6)"
+        access_modifier: public_access
+      - name: DIST_IN_M
+        expr: DIST_IN_M
+        data_type: "NUMBER(5,2)"
+        access_modifier: public_access
+      - name: LATITUDE
+        expr: LATITUDE
+        data_type: "NUMBER(8,6)"
+        access_modifier: public_access
+      - name: LONGITUDE
+        expr: LONGITUDE
+        data_type: "NUMBER(8,6)"
+        access_modifier: public_access
+      - name: TOT_PRECIPITATION_IN
+        expr: TOT_PRECIPITATION_IN
+        data_type: "NUMBER(3,2)"
+        access_modifier: public_access
+      - name: TOT_SNOWFALL_IN
+        expr: TOT_SNOWFALL_IN
+        data_type: "NUMBER(3,2)"
+        access_modifier: public_access
+      - name: ZIP_LATITUDE
+        expr: ZIP_LATITUDE
+        data_type: "NUMBER(17,15)"
+        access_modifier: public_access
+      - name: ZIP_LONGITUDE
+        expr: ZIP_LONGITUDE
+        data_type: "NUMBER(9,6)"
+        access_modifier: public_access
+    time_dimensions:
+      - name: DATE_VALUES
+        expr: DATE_VALUES
+        data_type: DATE
+        access_modifier: public_access
+relationships:
+  - name: PREDICTION_TO_RCA
+    left_table: VEHICLE_BATTERY_PREDICTION
+    right_table: VEHICLE_BATTERY_RCA
+    relationship_columns:
+      - left_column: CAR_ID
+        right_column: CAR_ID
+      - left_column: VIN
+        right_column: VIN
+      - left_column: PART_NUMBER
+        right_column: PART_NUMBER
+    join_type: left_outer
+  - name: RCA_TO_360
+    left_table: VEHICLE_BATTERY_RCA
+    right_table: VEHICLE_BATTERY_360
+    relationship_columns:
+      - left_column: CAR_ID
+        right_column: CAR_ID
+      - left_column: VIN
+        right_column: VIN
+    join_type: left_outer
+  - name: VEHICLE_TO_EVENTS
+    left_table: VEHICLE_EVENT_CONTEXT
+    right_table: VEHICLE_BATTERY_360
+    relationship_columns:
+      - left_column: CAR_ID
+        right_column: CAR_ID
+      - left_column: VIN
+        right_column: VIN
+module_custom_instructions:
+  sql_generation: |-
+    Use the curated AutoPulse tables as the authoritative source for analysis.
+
+    Respect the grain of each table:
+    - VEHICLE_BATTERY_360 represents vehicle/battery information.
+    - VEHICLE_EVENT_CONTEXT represents vehicle event-level information.
+    - VEHICLE_BATTERY_RCA represents vehicle/battery-level aggregated RCA metrics.
+    - VEHICLE_BATTERY_PREDICTION represents vehicle/battery-level prediction results.
+
+    Avoid double-counting vehicles or events when joining tables. Use DISTINCT only when appropriate to the business question and do not use DISTINCT to hide incorrect joins.
+
+    For vehicle counts, count distinct CAR_ID or VIN as appropriate.
+    For event counts, use the event-level table and count event records appropriately.
+    Do not mix event-level measures with vehicle-level measures without accounting for the different grains.
+
+    When interpreting DTC_ERROR_EVENTS and ERROR_RATE_PCT, consider TOTAL_EVENTS. A 100% error rate based on one event is not equivalent to a 100% error rate based on many events.
+
+    Treat FAILURE_PROBABILITY_PCT, PREDICTED_FAILURE_FLAG, RISK_LEVEL, and PREDICTED_FAILURE_DAYS as prediction outputs, not confirmed failures.
+
+    Clearly distinguish observed facts, calculated metrics, prediction outputs, and analytical interpretation.
+
+    Do not invent data or values. If the available data is insufficient to answer a question, state that clearly.
+
+    Return numeric percentages and averages with appropriate precision, preferably 2 decimal places.
+  question_categorization: "Answer questions related to AutoPulse vehicle, battery, event, RCA, and prediction analysis using the available semantic model data. If a question is unrelated to these domains, indicate that it is outside the scope of the AutoPulse Battery Intelligence Analyst."

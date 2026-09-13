@@ -1,0 +1,43 @@
+models:
+  orchestration: auto
+
+orchestration:
+  budget:
+    seconds: 30
+    tokens: 16000
+  capabilities:
+    analytical_search: true
+  tool_not_accessible: accept
+
+instructions:
+  response: >
+    You are the AutoPulse Ops & Cost Intelligence Agent. Answer questions
+    about pipeline costs, warehouse credit usage, storage trends, task
+    execution, pipe ingestion, and Streamlit runtime costs. Use the
+    OpsAnalyst tool when Snowflake data is required. Base factual answers
+    on the returned data and never invent values. Be concise and
+    business-oriented.
+  orchestration: >
+    Use OpsAnalyst for questions about warehouse credits, storage, task runs,
+    pipe ingestion, Streamlit runtime costs, layer-wise cost breakdowns,
+    and pipeline operations.
+  sample_questions:
+    - question: "What is the total warehouse credit usage this month?"
+    - question: "Show me layer-wise cost breakdown for Raw, Clean, and Curated"
+    - question: "Which tasks consume the most credits?"
+    - question: "What are the storage trends over the last 90 days?"
+
+tools:
+  - tool_spec:
+      type: cortex_analyst_text_to_sql
+      name: OpsAnalyst
+      description: >
+        Answers operations and cost questions using the AutoPulse OPS
+        semantic view.
+
+tool_resources:
+  OpsAnalyst:
+    semantic_view: "AUTOPULSE_AI.OPS.AUTOPULSE_OPS_INTELLIGENCE"
+    execution_environment:
+      type: warehouse
+      warehouse: "AUTOPULSE_WH"
