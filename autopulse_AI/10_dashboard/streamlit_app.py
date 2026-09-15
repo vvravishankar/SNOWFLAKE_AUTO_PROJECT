@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import json
 import re
+import os
 from datetime import datetime, timezone
 
 # ============================================================
@@ -60,11 +61,8 @@ TABLE_VQ = f"{DATABASE}.{CURATED_SCHEMA}.VEHICLE_QUALITY_SCORECARD"
 WATCH_THRESHOLD = 40      # vehicles at/above this % form the active watchlist
 CRITICAL_THRESHOLD = 60   # rule-based "critical" band
 
-try:
-    from snowflake.snowpark.context import get_active_session
-    session = get_active_session()
-except Exception:
-    session = None
+conn = st.connection("snowflake", ttl=os.getenv("SNOWFLAKE_CONNECTION_TTL"))
+session = conn.session()
 
 if session:
     try:
@@ -222,16 +220,12 @@ section[data-testid="stSidebar"] { display:none; }
 # HELPERS
 # -----------------------------
 def qdf(sql):
-    if session is None:
-        return pd.DataFrame()
     try:
         return session.sql(sql).to_pandas()
     except Exception:
         return pd.DataFrame()
 
 def discover_agents():
-    if session is None:
-        return {}
     try:
         df = session.sql(f"SHOW AGENTS IN DATABASE {AGENT_DATABASE}").to_pandas()
         if df.empty:
@@ -262,8 +256,6 @@ def resolve_agent(preferred_name, keywords=()):
     return f"{AGENT_DATABASE}.{AGENT_SCHEMA}.{preferred_name}"
 
 def run_cortex_agent(agent_fqn, question):
-    if session is None:
-        return "Snowflake session is not available.", False
     body = {"messages": [{"role": "user", "content": [{"type": "text", "text": question}]}],
             "stream": False, "background": False}
     body_json = json.dumps(body, ensure_ascii=False)
