@@ -120,7 +120,7 @@ tools:
         AutoPulse DQ semantic view.
 tool_resources:
   DQAnalyst:
-    semantic_view: AUTOPULSE_AI.DQ.AUTOPULSE_DQ_INTELLIGENCE
+    semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_DQ_INTELLIGENCE
 $$;
 
 
@@ -262,7 +262,7 @@ tools:
         semantic view.
 tool_resources:
   OpsAnalyst:
-    semantic_view: AUTOPULSE_AI.OPS.AUTOPULSE_OPS_INTELLIGENCE
+    semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_OPS_INTELLIGENCE
 $$;
 
 
