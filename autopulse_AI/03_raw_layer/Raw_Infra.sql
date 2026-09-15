@@ -738,7 +738,7 @@ FROM (
     FROM @AUTOPULSE_AI.RAW.AUTOPULSE_RAW_STAGE/
 )
 FILE_FORMAT = (FORMAT_NAME = 'AUTOPULSE_AI.RAW.CSV_FILE_FORMAT')
-PATTERN = '.*[/]VEHICLES[.]csv';
+PATTERN = '.*[/]?VEHICLES[.]csv';
 
 
 -- ----------------------------------------------------------------------------
