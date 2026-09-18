@@ -35,8 +35,8 @@ USE SCHEMA GIT;
 -- Step 4: Secret
 CREATE OR REPLACE SECRET git_secret
     TYPE=PASSWORD
-    USERNAME=$gh_username
-    PASSWORD=$gh_pat
+    USERNAME=vvravishankar
+    PASSWORD=sdfsfsfsdfsfsfsdfsdfs
     COMMENT='GitHub PAT for Git integration - created by setup script';
 
 -- Step 5: API Integration
@@ -65,3 +65,4 @@ SHOW SCHEMAS IN DATABASE AUTOPULSE_AI;
 SHOW SECRETS IN SCHEMA AUTOPULSE_AI.GIT;
 SHOW API INTEGRATIONS LIKE 'GIT_API_INTEGRATION';
 SHOW GIT REPOSITORIES;
+

@@ -66,6 +66,12 @@ session = conn.session()
 
 if session:
     try:
+        _current_db = session.sql("SELECT CURRENT_DATABASE()").collect()[0][0]
+        if not _current_db:
+            session.sql(f"USE DATABASE {DATABASE}").collect()
+    except Exception:
+        pass
+    try:
         WH = session.sql("SELECT CURRENT_WAREHOUSE()").collect()[0][0] or WH
     except Exception:
         pass
@@ -240,7 +246,8 @@ section[data-testid="stSidebar"] { display:none; }
 def qdf(sql):
     try:
         return session.sql(sql).to_pandas()
-    except Exception:
+    except Exception as e:
+        st.error(f"Query failed: {e}")
         return pd.DataFrame()
 
 def discover_agents():
@@ -399,6 +406,78 @@ def load_data():
     return vehicles, prediction, rca, events
 
 vehicles, prediction, rca, events = load_data()
+
+# Preload Ops & Cost data so the tab is instant
+@st.cache_data(ttl=120, show_spinner=False)
+def load_ops_direct():
+    """Query ACCOUNT_USAGE views directly — preloaded at startup."""
+    wh = qdf("""
+        SELECT WAREHOUSE_NAME, DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
+               SUM(CREDITS_USED) AS CREDITS_USED, SUM(CREDITS_USED_COMPUTE) AS CREDITS_COMPUTE,
+               SUM(CREDITS_USED_CLOUD_SERVICES) AS CREDITS_CLOUD, COUNT(*) AS METERING_EVENTS
+        FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+        WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
+        GROUP BY WAREHOUSE_NAME, DATE_TRUNC('DAY', START_TIME)
+    """)
+    sv = qdf("""
+        SELECT TASK_NAME, DATABASE_NAME, SCHEMA_NAME,
+               DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
+               SUM(CREDITS_USED) AS CREDITS_USED, COUNT(*) AS TASK_RUNS,
+               AVG(DATEDIFF('SECOND', START_TIME, END_TIME)) AS AVG_DURATION_SEC
+        FROM SNOWFLAKE.ACCOUNT_USAGE.SERVERLESS_TASK_HISTORY
+        WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
+          AND DATABASE_NAME = 'AUTOPULSE_AI'
+        GROUP BY TASK_NAME, DATABASE_NAME, SCHEMA_NAME, DATE_TRUNC('DAY', START_TIME)
+    """)
+    pp = qdf("""
+        SELECT PIPE_NAME, DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
+               SUM(CREDITS_USED) AS CREDITS_USED, SUM(BYTES_INSERTED) AS BYTES_INSERTED,
+               SUM(FILES_INSERTED) AS FILES_INSERTED
+        FROM SNOWFLAKE.ACCOUNT_USAGE.PIPE_USAGE_HISTORY
+        WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
+        GROUP BY PIPE_NAME, DATE_TRUNC('DAY', START_TIME)
+    """)
+    storage = qdf("""
+        SELECT USAGE_DATE, STORAGE_BYTES, STAGE_BYTES, FAILSAFE_BYTES,
+               ROUND(STORAGE_BYTES / POWER(1024, 4), 4) AS STORAGE_TB,
+               ROUND(STAGE_BYTES / POWER(1024, 4), 4) AS STAGE_TB,
+               ROUND(FAILSAFE_BYTES / POWER(1024, 4), 4) AS FAILSAFE_TB,
+               ROUND((STORAGE_BYTES + STAGE_BYTES + FAILSAFE_BYTES) / POWER(1024, 4), 4) AS TOTAL_TB
+        FROM SNOWFLAKE.ACCOUNT_USAGE.STORAGE_USAGE
+        WHERE USAGE_DATE >= DATEADD(DAY, -90, CURRENT_DATE())
+    """)
+    qh = qdf("""
+        SELECT
+            CASE
+                WHEN SCHEMA_NAME = 'RAW' THEN 'RAW'
+                WHEN SCHEMA_NAME IN ('CLEAN', 'DQ') THEN 'CLEAN'
+                WHEN SCHEMA_NAME = 'CURATED' THEN 'CURATED'
+                WHEN SCHEMA_NAME IN ('AI', 'ML', 'SEMANTIC') THEN 'AI_AGENT'
+                ELSE 'OTHER'
+            END AS LAYER,
+            SCHEMA_NAME,
+            COUNT(*) AS QUERY_RUNS,
+            SUM(CREDITS_USED_CLOUD_SERVICES) AS CREDITS
+        FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+        WHERE DATABASE_NAME = 'AUTOPULSE_AI'
+          AND START_TIME >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+          AND SCHEMA_NAME IS NOT NULL
+        GROUP BY LAYER, SCHEMA_NAME
+        ORDER BY CREDITS DESC
+    """)
+    activity = qdf("""
+        SELECT NAME AS TASK_NAME, STATE, SCHEMA_NAME,
+               SCHEDULED_TIME, COMPLETED_TIME,
+               DATEDIFF('SECOND', QUERY_START_TIME, COMPLETED_TIME) AS DURATION_SEC
+        FROM SNOWFLAKE.ACCOUNT_USAGE.TASK_HISTORY
+        WHERE DATABASE_NAME = 'AUTOPULSE_AI'
+          AND SCHEDULED_TIME >= DATEADD(DAY, -30, CURRENT_TIMESTAMP())
+        ORDER BY SCHEDULED_TIME DESC
+        LIMIT 500
+    """)
+    return wh, sv, pp, storage, qh, activity
+
+_ops_data = load_ops_direct()
 
 # -----------------------------
 # STATE FILTER (global drill-down)
@@ -986,84 +1065,8 @@ def render_ops_cost():
 
     CREDIT_PRICE = 3.00  # $/credit — adjust to your contract rate
 
-    # Ensure warehouse is active for ACCOUNT_USAGE queries
-    if session:
-        try:
-            session.sql(f"USE WAREHOUSE {WH}").collect()
-        except Exception:
-            pass
-
-    @st.cache_data(ttl=120)
-    def load_ops_direct():
-        """Query ACCOUNT_USAGE views directly — no OPS Dynamic Tables needed."""
-        wh = qdf("""
-            SELECT WAREHOUSE_NAME, DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
-                   SUM(CREDITS_USED) AS CREDITS_USED, SUM(CREDITS_USED_COMPUTE) AS CREDITS_COMPUTE,
-                   SUM(CREDITS_USED_CLOUD_SERVICES) AS CREDITS_CLOUD, COUNT(*) AS METERING_EVENTS
-            FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
-            WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
-            GROUP BY WAREHOUSE_NAME, DATE_TRUNC('DAY', START_TIME)
-        """)
-        sv = qdf("""
-            SELECT TASK_NAME, DATABASE_NAME, SCHEMA_NAME,
-                   DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
-                   SUM(CREDITS_USED) AS CREDITS_USED, COUNT(*) AS TASK_RUNS,
-                   AVG(DATEDIFF('SECOND', START_TIME, END_TIME)) AS AVG_DURATION_SEC
-            FROM SNOWFLAKE.ACCOUNT_USAGE.SERVERLESS_TASK_HISTORY
-            WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
-              AND DATABASE_NAME = 'AUTOPULSE_AI'
-            GROUP BY TASK_NAME, DATABASE_NAME, SCHEMA_NAME, DATE_TRUNC('DAY', START_TIME)
-        """)
-        pp = qdf("""
-            SELECT PIPE_NAME, DATE_TRUNC('DAY', START_TIME) AS USAGE_DATE,
-                   SUM(CREDITS_USED) AS CREDITS_USED, SUM(BYTES_INSERTED) AS BYTES_INSERTED,
-                   SUM(FILES_INSERTED) AS FILES_INSERTED
-            FROM SNOWFLAKE.ACCOUNT_USAGE.PIPE_USAGE_HISTORY
-            WHERE START_TIME >= DATEADD(DAY, -90, CURRENT_TIMESTAMP())
-            GROUP BY PIPE_NAME, DATE_TRUNC('DAY', START_TIME)
-        """)
-        storage = qdf("""
-            SELECT USAGE_DATE, STORAGE_BYTES, STAGE_BYTES, FAILSAFE_BYTES,
-                   ROUND(STORAGE_BYTES / POWER(1024, 4), 4) AS STORAGE_TB,
-                   ROUND(STAGE_BYTES / POWER(1024, 4), 4) AS STAGE_TB,
-                   ROUND(FAILSAFE_BYTES / POWER(1024, 4), 4) AS FAILSAFE_TB,
-                   ROUND((STORAGE_BYTES + STAGE_BYTES + FAILSAFE_BYTES) / POWER(1024, 4), 4) AS TOTAL_TB
-            FROM SNOWFLAKE.ACCOUNT_USAGE.STORAGE_USAGE
-            WHERE USAGE_DATE >= DATEADD(DAY, -90, CURRENT_DATE())
-        """)
-        qh = qdf("""
-            SELECT
-                CASE
-                    WHEN SCHEMA_NAME = 'RAW' THEN 'RAW'
-                    WHEN SCHEMA_NAME IN ('CLEAN', 'DQ') THEN 'CLEAN'
-                    WHEN SCHEMA_NAME = 'CURATED' THEN 'CURATED'
-                    WHEN SCHEMA_NAME IN ('AI', 'ML', 'SEMANTIC') THEN 'AI_AGENT'
-                    ELSE 'OTHER'
-                END AS LAYER,
-                SCHEMA_NAME,
-                COUNT(*) AS QUERY_RUNS,
-                SUM(CREDITS_USED_CLOUD_SERVICES) AS CREDITS
-            FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
-            WHERE DATABASE_NAME = 'AUTOPULSE_AI'
-              AND START_TIME >= DATEADD('day', -90, CURRENT_TIMESTAMP())
-              AND SCHEMA_NAME IS NOT NULL
-            GROUP BY LAYER, SCHEMA_NAME
-            ORDER BY CREDITS DESC
-        """)
-        activity = qdf("""
-            SELECT NAME AS TASK_NAME, STATE, SCHEMA_NAME,
-                   SCHEDULED_TIME, COMPLETED_TIME,
-                   DATEDIFF('SECOND', QUERY_START_TIME, COMPLETED_TIME) AS DURATION_SEC
-            FROM SNOWFLAKE.ACCOUNT_USAGE.TASK_HISTORY
-            WHERE DATABASE_NAME = 'AUTOPULSE_AI'
-              AND SCHEDULED_TIME >= DATEADD(DAY, -30, CURRENT_TIMESTAMP())
-            ORDER BY SCHEDULED_TIME DESC
-            LIMIT 500
-        """)
-        return wh, sv, pp, storage, qh, activity
-
     try:
-        wh, sv, pp, storage, query_hist, activity = load_ops_direct()
+        wh, sv, pp, storage, query_hist, activity = _ops_data
     except Exception as e:
         st.warning(f"OPS data not available yet: {e}")
         return
@@ -1199,6 +1202,7 @@ def render_ops_cost():
 # TOP HEADER / LIVE WAVE
 # -----------------------------
 now = datetime.now().strftime("%H:%M:%S")
+now_date = datetime.now().strftime("%B %d, %Y")
 st.markdown(f"""
 <div class="ap-top">
   <div class="ap-brand">
@@ -1208,7 +1212,7 @@ st.markdown(f"""
       <div class="ap-sub">AI-POWERED BATTERY RISK INTELLIGENCE • LIVE SNOWFLAKE ANALYTICS</div>
     </div>
     <div class="live"><span class="live-dot"></span> LIVE DATA STREAM <span style="color:#18e879">〰〰〰</span></div>
-    <div class="ap-time">{now}</div>
+    <div class="ap-time">{now}<br><span style="font-size:10px;color:#5e7a8e;">{now_date}</span></div>
   </div>
   <div class="live-signal"><span></span></div>
   <div class="wave">

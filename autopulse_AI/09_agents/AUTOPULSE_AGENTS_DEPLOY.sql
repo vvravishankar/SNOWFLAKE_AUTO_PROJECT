@@ -96,7 +96,9 @@ tools:
 tool_resources:
   BatteryAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
@@ -146,7 +148,9 @@ tools:
 tool_resources:
   DQAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_DQ_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
@@ -194,7 +198,9 @@ tools:
 tool_resources:
   RCAAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
@@ -242,7 +248,9 @@ tools:
 tool_resources:
   PredictiveAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
@@ -291,7 +299,9 @@ tools:
 tool_resources:
   OpsAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_OPS_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
@@ -340,7 +350,9 @@ tools:
 tool_resources:
   VQAnalyst:
     semantic_view: AUTOPULSE_AI.CURATED.AUTOPULSE_BATTERY_INTELLIGENCE
-    warehouse: AUTOPULSE_WH
+    execution_environment:
+      type: warehouse
+      warehouse: AUTOPULSE_WH
 $$;
 
 
