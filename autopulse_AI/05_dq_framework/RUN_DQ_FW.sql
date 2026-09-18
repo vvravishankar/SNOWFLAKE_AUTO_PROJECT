@@ -490,7 +490,7 @@ while (rule_rs.next()) {
 
             }
 
-            else {
+        else {
 
                 pass_conditions.push(
                     '(' + rule_condition + ')'
@@ -861,6 +861,34 @@ if (
             TOT_PRECIPITATION_IN,
             TOT_SNOWFALL_IN,
             DTC_ERROR_CODE,
+            SOURCE_FILE_NAME,
+            LOAD_TIMESTAMP
+
+        FROM
+            AUTOPULSE_AI.RAW.${source_table_param}
+
+        WHERE
+            ${today_condition}
+
+        AND
+            ${combined_condition}
+    `;
+}
+
+else if (
+    source_table_param ==
+    'DATE_VALUES_YEAR_RAW'
+) {
+
+    clean_insert_sql = `
+
+        INSERT INTO
+            AUTOPULSE_AI.CLEAN.${clean_table}
+            (DATE_VALUES, YEAR, SOURCE_FILE_NAME, LOAD_TIMESTAMP)
+
+        SELECT
+            DATE_VALUES,
+            YEAR(DATE_VALUES) AS YEAR,
             SOURCE_FILE_NAME,
             LOAD_TIMESTAMP
 

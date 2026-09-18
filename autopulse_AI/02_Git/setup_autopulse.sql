@@ -36,7 +36,7 @@ USE SCHEMA GIT;
 CREATE OR REPLACE SECRET git_secret
     TYPE=PASSWORD
     USERNAME=vvravishankar
-    PASSWORD=sdfsfsfsdfsfsfsdfsdfs
+    PASSWORD=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     COMMENT='GitHub PAT for Git integration - created by setup script';
 
 -- Step 5: API Integration

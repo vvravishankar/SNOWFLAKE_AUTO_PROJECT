@@ -1,0 +1,153 @@
+================================================================
+AUTOPULSE AI — RELEASE NOTES
+================================================================
+ Version:    v1.0.3
+ Timestamp:  2026-09-18 14:31:00 UTC
+ Account:    ulb24170
+ User:       RAVI_SHANKAR
+ Role:       ACCOUNTADMIN (deploy) / PUBLIC (dashboard)
+ Warehouse:  AUTOPULSE_WH (X-SMALL)
+ Mode:       Incremental re-deployment
+================================================================
+
+DEPLOYMENT STEPS
+================================================================
+Step  | Name                       | Status | Objects
+------|----------------------------|--------|---------------------------
+  1   | WH, DB, Schemas, RBAC     | PASS   | 1 WH, 1 DB, 6 schemas, 5 roles, 3 users
+  2   | Git Integration            | SKIP   | CLI-only
+  3   | RAW Layer                  | PASS   | 1 file format, 1 stage, 11 tables, 11 pipes
+  4   | CLEAN Layer                | PASS   | 11 tables
+  5   | UDF (NORMALIZE_EVENT_DATE) | PASS   | 1 UDF
+  6   | DQ Stored Procedure        | PASS   | 1 procedure (RUN_DQ_FW)
+  7   | DQ Rules CSV Load          | PASS   | 148 rules loaded
+  8   | DQ Infrastructure          | PASS   | 3 tables, 11 streams, 11 tasks (started)
+  9   | Curated Dynamic Tables     | PASS   | 5 dynamic tables
+ 10   | OPS Cost Layer             | PASS   | 9 tables, 1 procedure, 1 task
+ 11   | Semantic Views             | PASS   | 3 semantic views
+ 12   | Cortex Agents              | PASS   | 6 agents (execution_environment fix applied)
+ 13   | Verification               | PASS   | All counts match expected
+================================================================
+
+OBJECT SUMMARY
+================================================================
+Category             | Count
+---------------------|------
+Warehouse            |   1
+Database             |   1
+Schemas              |   7 (RAW, CLEAN, CURATED, DQ, OPS, PUBLIC, GIT)
+RAW Tables           |  11
+CLEAN Tables         |  11
+DQ Tables            |   3
+OPS Tables           |   9
+CURATED Dyn Tables   |   5
+Pipes                |  11
+Streams              |  11
+Tasks (DQ)           |  11 (all started)
+Tasks (OPS)          |   1
+File Formats         |   1
+Stages               |   1
+UDFs                 |   1
+Procedures           |   2
+DQ Rules             | 148
+Semantic Views       |   3
+Cortex Agents        |   6
+Roles                |   5
+Users                |   3
+---------------------|------
+TOTAL OBJECTS         | ~84
+================================================================
+
+DATA FLOW
+================================================================
+CSV Files → @AUTOPULSE_RAW_STAGE
+         → Snowpipes (11) → RAW Tables (11)
+         → Streams (11) → DQ Tasks (11) → RUN_DQ_FW proc
+         → CLEAN Tables (11)
+         → Dynamic Tables (5): VEHICLE_BATTERY_360
+                                VEHICLE_EVENT_CONTEXT
+                                VEHICLE_BATTERY_RCA
+                                VEHICLE_BATTERY_PREDICTION
+                                VEHICLE_QUALITY_SCORECARD
+         → Semantic Views (3) → Cortex Agents (6)
+         → Streamlit Dashboard
+================================================================
+
+FIXES APPLIED IN THIS SESSION
+================================================================
+1. AUTOPULSE_WH USAGE granted to PUBLIC role
+2. All AUTOPULSE_AI objects granted to PUBLIC (current + future)
+3. CORTEX_USER + IMPORTED PRIVILEGES ON SNOWFLAKE → PUBLIC
+4. All 6 agents redeployed with execution_environment format
+5. .streamlit/config.toml created (missing artifact)
+6. qdf() error reporting added to dashboard
+7. USE DATABASE fallback added to dashboard session init
+8. Ops data preloaded at startup (no loading spinner on tab click)
+9. Date display added under LIVE indicator in dashboard header
+10. GIT_API_INTEGRATION + GIT schema created
+11. PUBLIC role grants added to User_Role.sql (Step 18)
+================================================================
+
+PROJECT FOLDER STRUCTURE
+================================================================
+autopulse_AI/
+├── 01_warehouse_and_rbac/
+│   └── User_Role.sql
+├── 02_Git/
+│   └── setup_autopulse.sql         (CLI-only, skipped)
+├── 03_raw_layer/
+│   └── Raw_Infra.sql
+├── 04_clean_layer/
+│   └── Clean_Infra.sql
+├── 05_dq_framework/
+│   ├── NORMALIZE_EVENT_DATE.sql
+│   ├── RUN_DQ_FW.sql
+│   ├── DQ_Infra.sql
+│   └── DQ_Rules.CSV
+├── 06_curated_layer/
+│   └── Curated_Infra.sql
+├── 07_ops_layer/
+│   └── Streamlit_cost.sql
+├── 08_semantic_views/
+│   ├── deploy_semantic_views.py
+│   ├── battery_intelligence.sv.yaml
+│   ├── dq_intelligence.sv.yaml
+│   └── ops_intelligence.sv.yaml
+├── 09_agents/
+│   ├── AUTOPULSE_AGENTS_DEPLOY.sql
+│   ├── battery_agent.yaml
+│   ├── dq_agent.yaml
+│   ├── ops_agent.yaml
+│   ├── rca_agent.yaml
+│   └── vehicle_quality_agent.yaml
+├── 10_dashboard/
+│   ├── streamlit_app.py
+│   ├── snowflake.yml
+│   ├── pyproject.toml
+│   └── .streamlit/config.toml
+├── DEPLOYMENT_PROMPT.md
+└── TEARDOWN.sql
+================================================================
+
+KNOWN ISSUES
+================================================================
+- BATTERY_COMPONENTS_RAW: No CSV file on stage (expected)
+- DATE_VALUES_YEAR: DQ proc has type mismatch (REC_COUNTS → DATE_VALUES).
+  Manual INSERT workaround applied during pipeline health check.
+- Streamlit app requires Stop+Run to pick up code changes.
+================================================================
+
+NEXT STEPS
+================================================================
+1. Upload CSV files to @AUTOPULSE_AI.RAW.AUTOPULSE_RAW_STAGE
+2. Type 'data loaded' to trigger pipeline health check (Step 14)
+3. Wait ~5 min for DQ tasks + dynamic table refresh
+4. Launch Streamlit dashboard (Stop + Run on streamlit_app.py)
+================================================================
+
+TEARDOWN
+================================================================
+To tear down the entire project, run:
+  autopulse_AI/TEARDOWN.sql
+This drops: database, warehouse, API integration, 5 roles, 3 users.
+================================================================

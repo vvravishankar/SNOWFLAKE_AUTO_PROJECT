@@ -1205,6 +1205,7 @@ from datetime import datetime, timezone, timedelta as _td
 IST = timezone(_td(hours=5, minutes=30))
 now = datetime.now(IST).strftime("%H:%M:%S")
 now_date = datetime.now(IST).strftime("%B %d, %Y")
+
 st.markdown(f"""
 <div class="ap-top">
   <div class="ap-brand">
