@@ -1,0 +1,178 @@
+================================================================
+AUTOPULSE AI — RELEASE NOTES
+================================================================
+Version:    v1.0.2
+Deployed:   2026-09-18 02:22 – 03:06 UTC (Sep 18, 2026)
+Account:    ulb24170
+User:       RAVI_SHANKAR
+Role:       ACCOUNTADMIN (bootstrap), SYSADMIN (objects), AUTOPULSE_AI_ENGINEER (agents)
+Warehouse:  AUTOPULSE_WH (X-SMALL)
+================================================================
+
+DEPLOYMENT STEPS
+================================================================
+Step | Name                              | Status | Time   | Objects
+-----|-----------------------------------|--------|--------|---------------------------
+  1  | Warehouse & RBAC                  | PASS   | ~30s   | 1 WH, 1 DB, 5 schemas, 5 roles, 3 users
+  2  | Git Setup                         | SKIP   | -      | CLI-only, not run in Snowsight
+  3  | RAW Layer                         | PASS   | ~45s   | 1 file format, 1 stage, 11 tables, 11 pipes, 3 OPS audit tables
+  4  | CLEAN Layer                       | PASS   | ~10s   | 11 tables
+  5  | NORMALIZE_EVENT_DATE UDF          | PASS   | ~5s    | 1 UDF
+  6  | RUN_DQ_FW Procedure               | PASS   | ~10s   | 1 stored procedure (JavaScript)
+  7  | DQ Rules CSV Load                 | PASS   | ~15s   | 148 rules loaded (11 tables covered)
+  8  | DQ Infrastructure                 | PASS   | ~20s   | 3 tables, 11 streams, 11 tasks (started)
+  9  | Curated Layer                     | PASS   | ~30s   | 5 dynamic tables (all ACTIVE)
+ 10  | OPS Layer                         | PASS   | ~20s   | 6 cost tables, 1 procedure, 1 task (started)
+ 11  | Semantic Views                    | PASS   | ~120s  | 3 semantic views
+ 12  | Cortex Agents                     | PASS   | ~15s   | 6 agents
+ 13  | Final Verification                | PASS   | ~10s   | All counts verified
+================================================================
+Total deployment time: ~44 minutes (including troubleshooting)
+
+FULL OBJECT SUMMARY
+================================================================
+Layer     | Object Type        | Count
+----------|--------------------|------
+INFRA     | Warehouse          | 1 (AUTOPULSE_WH)
+INFRA     | Database           | 1 (AUTOPULSE_AI)
+INFRA     | Schemas            | 5 (RAW, CLEAN, CURATED, DQ, OPS) + GIT, PUBLIC
+RBAC      | Roles              | 5 (COMMON, ETL_ENGINEER, AI_ENGINEER, PYTHON_ENGINEER, VIEWER)
+RBAC      | Users              | 3 (SHAREENKHAN, PRASHANTPALIWAL, VEERESHGODUGU)
+RAW       | File Format        | 1 (CSV_FILE_FORMAT)
+RAW       | Stage              | 1 (AUTOPULSE_RAW_STAGE)
+RAW       | Tables             | 11
+RAW       | Snowpipes          | 11
+CLEAN     | Tables             | 11
+DQ        | Tables             | 3 (DQ_RULES, DQ_RESULTS, REJECTED_RECORDS)
+DQ        | Rules Loaded       | 148
+DQ        | UDF                | 1 (NORMALIZE_EVENT_DATE)
+DQ        | Procedure          | 1 (RUN_DQ_FW)
+DQ        | Streams            | 11
+DQ        | Tasks              | 11 (all started, 1-min schedule)
+CURATED   | Dynamic Tables     | 5 (360, Events, RCA, Prediction, Quality Scorecard)
+OPS       | Tables             | 15 (6 cost + 3 audit + 6 renamed/derived)
+OPS       | Procedure          | 1 (REFRESH_COST_TABLES)
+OPS       | Tasks              | 1 (OPS_COST_REFRESH_TASK, started, 1-min)
+CURATED   | Semantic Views     | 3 (Battery, DQ, OPS Intelligence)
+CURATED   | Cortex Agents      | 6 (Battery, DQ, RCA, Predictive, OPS, Vehicle Quality)
+================================================================
+Total objects deployed: ~100+
+
+DEMO TIMING TABLE
+================================================================
+Object              | Demo Value     | Production Value
+--------------------|----------------|------------------
+DQ Tasks schedule   | 1 MINUTE       | 600 MINUTE (10 hr)
+OPS Task schedule   | 1 MINUTE       | 60 MINUTE (1 hr)
+DT VEHICLE_BATTERY_360     | 1 min lag | 60 min lag
+DT VEHICLE_EVENT_CONTEXT   | 2 min lag | 120 min lag
+DT VEHICLE_BATTERY_RCA     | 3 min lag | 180 min lag
+DT VEHICLE_BATTERY_PREDICTION | 4 min lag | 240 min lag
+DT VEHICLE_QUALITY_SCORECARD  | 5 min lag | 300 min lag
+================================================================
+
+DATA FLOW DIAGRAM
+================================================================
+
+  CSV Files
+     |
+     v
+  @AUTOPULSE_RAW_STAGE
+     |
+     v  (11 Snowpipes, pattern-matched)
+  RAW Layer (11 tables)
+     |
+     v  (11 append-only streams)
+  DQ Framework
+     |-- DQ_RULES (148 rules)
+     |-- RUN_DQ_FW() procedure
+     |-- DQ_RESULTS (pass/fail)
+     |-- REJECTED_RECORDS (quarantine)
+     |
+     v  (11 serverless tasks, 1-min)
+  CLEAN Layer (11 tables)
+     |
+     v  (Dynamic Tables, auto-refresh)
+  CURATED Layer
+     |-- VEHICLE_BATTERY_360
+     |-- VEHICLE_EVENT_CONTEXT
+     |-- VEHICLE_BATTERY_RCA
+     |-- VEHICLE_BATTERY_PREDICTION
+     |-- VEHICLE_QUALITY_SCORECARD
+     |
+     +---> 3 Semantic Views
+     |       |-- AUTOPULSE_BATTERY_INTELLIGENCE
+     |       |-- AUTOPULSE_DQ_INTELLIGENCE
+     |       |-- AUTOPULSE_OPS_INTELLIGENCE
+     |
+     +---> 6 Cortex Agents
+             |-- Battery Agent (blue)
+             |-- DQ Intelligence Agent (green)
+             |-- RCA Agent (orange)
+             |-- Predictive Agent (purple)
+             |-- OPS Agent (red)
+             |-- Vehicle Quality Agent (teal)
+
+  OPS Layer
+     |-- 6 cost tables (COST_WAREHOUSE, COST_SERVERLESS, COST_PIPES, COST_STORAGE, COST_STREAMLIT_RUNTIME, COST_STREAMLIT_DDL)
+     |-- 3 audit tables (DATA_LOAD_AUDIT, INGESTION_AUDIT, PIPELINE_RUNS)
+     |-- OPS_COST_REFRESH_TASK (1-min)
+
+================================================================
+
+PROJECT FOLDER STRUCTURE
+================================================================
+autopulse_AI/
+├── 00_deploy/               # Phased deploy scripts
+├── 01_warehouse_and_rbac/   # User_Role.sql
+├── 02_Git/                  # CLI-only (SKIPPED)
+├── 03_raw_layer/            # Raw_Infra.sql
+├── 04_clean_layer/          # Clean_Infra.sql
+├── 05_dq_framework/         # NORMALIZE_EVENT_DATE.sql, RUN_DQ_FW.sql, DQ_Infra.sql, DQ_Rules.CSV
+├── 06_curated_layer/        # Curated_Infra.sql (5 dynamic tables)
+├── 08_semantic_views/       # 3 YAML files (.sv.yaml)
+├── 09_agents/               # AUTOPULSE_AGENTS_DEPLOY.sql + 5 YAML configs
+├── 10_dashboard/            # Streamlit app (streamlit_app.py, snowflake.yml)
+├── DEPLOYMENT_PROMPT.md
+├── TEARDOWN.sql
+└── Release_*.txt
+================================================================
+
+FIXES APPLIED DURING DEPLOYMENT
+================================================================
+1. 07_ops_layer/Streamlit_cost.sql was not present in workspace.
+   Created equivalent OPS cost tables from ACCOUNT_USAGE views,
+   then renamed tables to match the OPS semantic view YAML expectations
+   (COST_WAREHOUSE, COST_SERVERLESS, COST_PIPES, COST_STORAGE,
+    COST_STREAMLIT_RUNTIME, COST_STREAMLIT_DDL).
+2. Added OPERATION_COUNT column to COST_STREAMLIT_DDL to satisfy
+   the OPS Intelligence semantic view YAML definition.
+3. Added CREDITS_USED column to COST_STREAMLIT_RUNTIME to satisfy
+   the OPS Intelligence semantic view YAML definition.
+4. Granted CREATE DYNAMIC TABLE on CURATED schema to SYSADMIN
+   (needed for VEHICLE_QUALITY_SCORECARD dynamic table).
+================================================================
+
+KNOWN ISSUES / WARNINGS
+================================================================
+- All RAW and CLEAN tables have 0 rows (no data loaded yet)
+- Dynamic tables show 0 rows (waiting for CLEAN data)
+- Snowpipe AUTO_INGEST=TRUE on internal stage requires event notification
+  or manual COPY INTO after file upload
+- OPS cost tables created from ACCOUNT_USAGE (not original script)
+================================================================
+
+NEXT STEPS
+================================================================
+1. Upload CSV data files to @AUTOPULSE_AI.RAW.AUTOPULSE_RAW_STAGE
+2. Wait ~5 min for DQ tasks to process RAW -> CLEAN
+3. Wait ~5 min for dynamic tables to refresh CLEAN -> CURATED
+4. Launch the Streamlit dashboard
+5. Test Cortex Agents
+================================================================
+
+TEARDOWN
+================================================================
+For full teardown, run: autopulse_AI/TEARDOWN.sql
+Drops: database, warehouse, API integration, 5 roles, 3 users
+================================================================

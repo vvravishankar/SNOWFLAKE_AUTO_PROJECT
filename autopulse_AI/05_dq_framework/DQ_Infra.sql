@@ -264,25 +264,11 @@ ALTER TASK AUTOPULSE_AI.DQ.TASK_DQ_WEATHER_DATA RESUME;
 ALTER TASK AUTOPULSE_AI.DQ.TASK_DQ_ZIP_CODE_INFO RESUME;
 
 -- ============================================================================
--- 7. FIX IS_ACTIVE COLUMN TYPE (CSV LOAD WORKAROUND)
+-- 7. IS_ACTIVE COLUMN — NO FIX NEEDED
 -- ============================================================================
--- When DQ_Rules.CSV is loaded before this script runs, IS_ACTIVE may be
--- VARCHAR 'TRUE'/'FALSE' instead of BOOLEAN. The RUN_DQ_FW procedure
--- checks IS_ACTIVE = TRUE (boolean comparison), so we must ensure the
--- column is BOOLEAN. This block is idempotent — safe to rerun.
+-- The DQ_RULES table defines IS_ACTIVE as BOOLEAN (section 1 above).
+-- Step 7 (CSV load) uses MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE so that
+-- Snowflake auto-casts the CSV 'TRUE'/'FALSE' strings to BOOLEAN on load.
+-- No post-load column repair is required.
 -- ============================================================================
-
-ALTER TABLE AUTOPULSE_AI.DQ.DQ_RULES ADD COLUMN IF NOT EXISTS IS_ACTIVE_BOOL BOOLEAN;
-
-UPDATE AUTOPULSE_AI.DQ.DQ_RULES
-SET IS_ACTIVE_BOOL = CASE
-    WHEN IS_ACTIVE::VARCHAR IN ('TRUE','true','1') THEN TRUE
-    ELSE FALSE
-END
-WHERE IS_ACTIVE_BOOL IS NULL;
-
--- Only drop + rename if IS_ACTIVE is not already BOOLEAN
--- (safe because ADD COLUMN IF NOT EXISTS is a no-op when column exists)
-ALTER TABLE AUTOPULSE_AI.DQ.DQ_RULES DROP COLUMN IS_ACTIVE;
-ALTER TABLE AUTOPULSE_AI.DQ.DQ_RULES RENAME COLUMN IS_ACTIVE_BOOL TO IS_ACTIVE;
 

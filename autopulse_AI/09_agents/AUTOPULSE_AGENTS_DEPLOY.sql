@@ -1,7 +1,31 @@
--- ============================================================
--- AUTOPULSE AI — CORTEX AGENTS DEPLOYMENT
--- 6 Agents: Battery, DQ, RCA, Predictive, OPS, Vehicle Quality
--- ============================================================
+-- ============================================================================
+-- AUTOPULSE AI | CORTEX AGENTS DEPLOYMENT
+-- ============================================================================
+--
+-- Purpose:
+--   Deploy 6 Cortex Agents for the AutoPulse AI platform. Each agent uses
+--   a cortex_analyst_text_to_sql tool backed by one of the 3 semantic views.
+--
+-- Agents created (all in AUTOPULSE_AI.CURATED):
+--   1. AUTOPULSE_BATTERY_AGENT         (blue)   → AUTOPULSE_BATTERY_INTELLIGENCE
+--   2. AUTOPULSE_DQ_INTELLIGENCE       (green)  → AUTOPULSE_DQ_INTELLIGENCE
+--   3. AUTOPULSE_RCA_AGENT             (orange) → AUTOPULSE_BATTERY_INTELLIGENCE
+--   4. AUTOPULSE_PREDICTIVE_AGENT      (purple) → AUTOPULSE_BATTERY_INTELLIGENCE
+--   5. AUTOPULSE_OPS_AGENT             (red)    → AUTOPULSE_OPS_INTELLIGENCE
+--   6. AUTOPULSE_VEHICLE_QUALITY_AGENT (teal)   → AUTOPULSE_BATTERY_INTELLIGENCE
+--
+-- Dependencies:
+--   - 3 semantic views must exist in AUTOPULSE_AI.CURATED (Step 11)
+--   - Base tables in CURATED, DQ, and OPS must exist (Steps 3-10)
+--   - AUTOPULSE_AI_ENGINEER role must have CREATE AGENT, CORTEX_USER,
+--     and SELECT on all backing tables
+--
+-- Execution roles:
+--   - ACCOUNTADMIN: grants privileges to AUTOPULSE_AI_ENGINEER
+--   - AUTOPULSE_AI_ENGINEER: creates the agents (owns them)
+--
+-- Warehouse: AUTOPULSE_WH (used by each agent's cortex_analyst tool)
+-- ============================================================================
 
 USE ROLE ACCOUNTADMIN;
 USE WAREHOUSE AUTOPULSE_WH;

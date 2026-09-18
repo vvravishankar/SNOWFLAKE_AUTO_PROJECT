@@ -38,15 +38,26 @@ Execute them directly without asking for confirmation:
 - SET (session variables)
 - SHOW, DESCRIBE, LIST, SELECT (validation queries)
 
+## Pre-Approved Bash Commands (do NOT ask permission for these)
+
+The following bash/CLI commands are pre-approved for this deployment session.
+Execute them directly without asking for confirmation:
+
+- cat     (read workspace files, e.g. YAML content)
+- cp      (copy workspace files to /tmp for staging)
+- python3 (run deployment scripts, e.g. semantic view deployer)
+- snow stage copy (upload to or download from Snowflake internal stages)
+- snow sql -q / -f (execute SQL via CLI)
+
 ## Release Notes
 
 After Step 13 (final verification), generate a release note file:
 
-1. Check for existing Release_*.txt files in hackathon_dl/ to determine version:
+1. Check for existing Release_*.txt files in autopulse_AI/ to determine version:
    - No existing file → v1.0.0
    - Existing v1.0.0 → v1.0.1 (increment patch)
    - Existing v1.0.x → v1.0.(x+1)
-2. File name: hackathon_dl/Release_<YYYYMMDD_HHMMSS>.txt
+2. File name: autopulse_AI/Release_<YYYYMMDD_HHMMSS>.txt
    where the timestamp is the deployment completion time.
 3. The release note must contain:
    - Deployment version and timestamp
@@ -59,22 +70,48 @@ After Step 13 (final verification), generate a release note file:
    - Project folder structure
    - Known issues or warnings (if any)
    - Next steps (upload data, wait for pipeline, check dashboard)
-   - Teardown instructions (reference hackathon_dl/TEARDOWN.sql)
+   - Teardown instructions (reference autopulse_AI/TEARDOWN.sql)
 
 ## Deployment Order
 
-Step 1:  hackathon_dl/01_warehouse_and_rbac/User_Role.sql  → WH, DB, schemas, roles, users
+Step 1:  autopulse_AI/01_warehouse_and_rbac/User_Role.sql     → WH, DB, schemas, roles, users
 Step 2:  SKIP (02_Git is CLI-only)
-Step 3:  hackathon_dl/03_raw_layer/Raw_Infra.sql           → file format, stage, 11 RAW tables, 11 pipes
-Step 4:  hackathon_dl/04_clean_layer/Clean_Infra.sql       → 11 CLEAN tables
-Step 5:  hackathon_dl/05_dq_framework/NORMALIZE_EVENT_DATE.sql → UDF
-Step 6:  hackathon_dl/05_dq_framework/RUN_DQ_FW.sql        → DQ stored procedure
-Step 7:  Load hackathon_dl/05_dq_framework/DQ_Rules.CSV    → into AUTOPULSE_AI.DQ.DQ_RULES
-Step 8:  hackathon_dl/05_dq_framework/DQ_Infra.sql         → DQ tables, 11 streams, 11 tasks
-Step 9:  hackathon_dl/06_curated_layer/Curated_Infra.sql   → 4 dynamic tables
-Step 10: hackathon_dl/07_ops_layer/Streamlit_cost.sql      → 6 OPS cost tables, proc, task
-Step 11: hackathon_dl/08_semantic_views/*.yaml              → 3 semantic views
-Step 12: hackathon_dl/09_agents/AUTOPULSE_AGENTS_DEPLOY.sql → 5 Cortex agents (Battery, DQ, RCA, OPS, Vehicle Quality)
+Step 3:  autopulse_AI/03_raw_layer/Raw_Infra.sql              → file format, stage, 11 RAW tables, 11 pipes
+Step 4:  autopulse_AI/04_clean_layer/Clean_Infra.sql          → 11 CLEAN tables
+Step 5:  autopulse_AI/05_dq_framework/NORMALIZE_EVENT_DATE.sql → UDF
+Step 6:  autopulse_AI/05_dq_framework/RUN_DQ_FW.sql           → DQ stored procedure
+Step 7:  Load DQ_Rules.CSV → into AUTOPULSE_AI.DQ.DQ_RULES
+         Procedure:
+         a. cp /workspace/autopulse_AI/05_dq_framework/DQ_Rules.CSV /tmp/DQ_Rules.CSV
+         b. CREATE STAGE IF NOT EXISTS AUTOPULSE_AI.DQ.DQ_TEMP_STAGE
+              FILE_FORMAT = (TYPE=CSV SKIP_HEADER=1 FIELD_OPTIONALLY_ENCLOSED_BY='"'
+                             FIELD_DELIMITER=',' EMPTY_FIELD_AS_NULL=TRUE);
+         c. snow stage copy /tmp/DQ_Rules.CSV @AUTOPULSE_AI.DQ.DQ_TEMP_STAGE/ --overwrite --role SYSADMIN --warehouse AUTOPULSE_WH
+         d. COPY INTO AUTOPULSE_AI.DQ.DQ_RULES
+            FROM @AUTOPULSE_AI.DQ.DQ_TEMP_STAGE/DQ_Rules.CSV
+            FILE_FORMAT = (TYPE=CSV SKIP_HEADER=1 FIELD_OPTIONALLY_ENCLOSED_BY='"'
+                           FIELD_DELIMITER=',' EMPTY_FIELD_AS_NULL=TRUE)
+            MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
+            ON_ERROR='CONTINUE';
+            -- MATCH_BY_COLUMN_NAME maps CSV headers to table columns by name
+            -- and auto-casts 'TRUE'/'FALSE' strings to BOOLEAN for IS_ACTIVE.
+            -- No post-load IS_ACTIVE repair is needed.
+         e. DROP STAGE IF EXISTS AUTOPULSE_AI.DQ.DQ_TEMP_STAGE
+Step 8:  autopulse_AI/05_dq_framework/DQ_Infra.sql            → DQ tables, 11 streams, 11 tasks
+Step 9:  autopulse_AI/06_curated_layer/Curated_Infra.sql      → 5 dynamic tables
+Step 10: autopulse_AI/07_ops_layer/Streamlit_cost.sql          → 6 OPS cost tables, proc, task
+Step 11: Deploy 3 semantic views from YAML files
+         Procedure:
+         a. python3 /workspace/autopulse_AI/08_semantic_views/deploy_semantic_views.py
+            -- This script handles everything:
+            --   reads each .sv.yaml from 08_semantic_views/
+            --   escapes single quotes for SQL embedding
+            --   calls SYSTEM$CREATE_SEMANTIC_VIEW_FROM_YAML('AUTOPULSE_AI.CURATED', yaml)
+            --   via `snow sql`
+            --   reports PASS/FAIL for each view
+            -- No manual cp, snow stage copy, or quote-escaping needed.
+         b. SHOW SEMANTIC VIEWS IN SCHEMA AUTOPULSE_AI.CURATED;  -- verify 3 created
+Step 12: autopulse_AI/09_agents/AUTOPULSE_AGENTS_DEPLOY.sql   → 6 Cortex agents (Battery, DQ, RCA, Predictive, OPS, Vehicle Quality)
 Step 13: Final verification — object counts, then generate Release Notes file
 Step 14: Data Pipeline Health Check — after user uploads data, diagnose the full pipeline
 
@@ -168,6 +205,7 @@ ALTER DYNAMIC TABLE AUTOPULSE_AI.CURATED.VEHICLE_BATTERY_360 REFRESH;
 ALTER DYNAMIC TABLE AUTOPULSE_AI.CURATED.VEHICLE_EVENT_CONTEXT REFRESH;
 ALTER DYNAMIC TABLE AUTOPULSE_AI.CURATED.VEHICLE_BATTERY_RCA REFRESH;
 ALTER DYNAMIC TABLE AUTOPULSE_AI.CURATED.VEHICLE_BATTERY_PREDICTION REFRESH;
+ALTER DYNAMIC TABLE AUTOPULSE_AI.CURATED.VEHICLE_QUALITY_SCORECARD REFRESH;
 ```
 
 ### 14g. Present the Pipeline Health Report
@@ -176,25 +214,26 @@ Show a single table like this:
 ```
 PIPELINE HEALTH CHECK
 ================================================================
-Layer     | Object                  | Rows    | Status
-----------|-------------------------|---------|-------------------
-STAGE     | @AUTOPULSE_RAW_STAGE    | 11 files| OK
-RAW       | BATTERY_COMPONENTS_RAW  | 5       | OK
-RAW       | VEHICLES_RAW            | 10000   | OK
-RAW       | VEHICLE_EVENTS_RAW      | 302883  | OK
-  ...     | ...                     | ...     | ...
-STREAM    | STREAM_VEHICLES_RAW     | FALSE   | OK (consumed)
-  ...     | ...                     | ...     | ...
-TASK      | TASK_DQ_VEHICLES        | started | OK
-TASK      | TASK_DQ_VEHICLE_EVENTS  | suspended| FIXED → resumed
-  ...     | ...                     | ...     | ...
-CLEAN     | VEHICLES_CLEAN          | 10000   | OK
-CLEAN     | VEHICLE_EVENTS_CLEAN    | 302883  | OK
-  ...     | ...                     | ...     | ...
-CURATED   | VEHICLE_BATTERY_360     | 10000   | OK
-CURATED   | VEHICLE_EVENT_CONTEXT   | 302883  | OK
-CURATED   | VEHICLE_BATTERY_RCA     | 5276    | OK
-CURATED   | VEHICLE_BATTERY_PREDICTION| 5276  | OK
+Layer     | Object                    | Rows    | Status
+----------|---------------------------|---------|-------------------
+STAGE     | @AUTOPULSE_RAW_STAGE      | 11 files| OK
+RAW       | BATTERY_COMPONENTS_RAW    | 5       | OK
+RAW       | VEHICLES_RAW              | 10000   | OK
+RAW       | VEHICLE_EVENTS_RAW        | 302883  | OK
+  ...     | ...                       | ...     | ...
+STREAM    | STREAM_VEHICLES_RAW       | FALSE   | OK (consumed)
+  ...     | ...                       | ...     | ...
+TASK      | TASK_DQ_VEHICLES          | started | OK
+TASK      | TASK_DQ_VEHICLE_EVENTS    | suspended| FIXED → resumed
+  ...     | ...                       | ...     | ...
+CLEAN     | VEHICLES_CLEAN            | 10000   | OK
+CLEAN     | VEHICLE_EVENTS_CLEAN      | 302883  | OK
+  ...     | ...                       | ...     | ...
+CURATED   | VEHICLE_BATTERY_360       | 10000   | OK
+CURATED   | VEHICLE_EVENT_CONTEXT     | 302883  | OK
+CURATED   | VEHICLE_BATTERY_RCA       | 5276    | OK
+CURATED   | VEHICLE_BATTERY_PREDICTION| 5276    | OK
+CURATED   | VEHICLE_QUALITY_SCORECARD | 5276    | OK
 ================================================================
 Pipeline: HEALTHY / BLOCKED AT <layer> / FIXED
 ================================================================
@@ -205,7 +244,7 @@ If any fixes were applied, list them in the report.
 
 ## Teardown
 
-For full teardown, run hackathon_dl/TEARDOWN.sql which drops:
+For full teardown, run autopulse_AI/TEARDOWN.sql which drops:
   database, warehouse, API integration, 5 roles, 3 users.
 
 Start with Step 1 now. Record the start time.

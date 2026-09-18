@@ -1,5 +1,56 @@
--- DQ framework stored procedure that validates RAW data and loads passing records into CLEAN
--- Co-authored with CoCo
+-- ============================================================================
+-- AUTOPULSE AI | DQ FRAMEWORK
+-- Procedure: RUN_DQ_FW (Run Data Quality Framework)
+-- ============================================================================
+--
+-- Purpose:
+--   Execute all active DQ rules for a given RAW source table, record
+--   pass/fail results in DQ_RESULTS, and load DQ-approved records into
+--   the corresponding CLEAN table.
+--
+-- Architecture:
+--   Snowpipe -> RAW -> [DQ Stream triggers this procedure via Task]
+--                          |
+--                          +--> DQ_RULES      (rule definitions, 148 rules)
+--                          +--> DQ_RESULTS     (per-rule pass/fail stats)
+--                          +--> REJECTED_RECORDS (quarantine, future use)
+--                          |
+--                          +--> CLEAN table    (DQ-approved records)
+--
+-- Execution:
+--   CALL AUTOPULSE_AI.DQ.RUN_DQ_FW('VEHICLES_RAW');
+--
+--   Accepts any of the 11 RAW table names:
+--     BATTERY_COMPONENTS_RAW, BATTERY_SUPPLIER_RAW, BATTERY_TYPE_RAW,
+--     DATE_VALUES_YEAR_RAW, DTC_BATTERY_ERROR_CODES_RAW, PART_BATTERY_RAW,
+--     STATES_AND_ABBREVIATIONS_RAW, VEHICLES_RAW, VEHICLE_EVENTS_RAW,
+--     WEATHER_DATA_RAW, ZIP_CODE_INFO_RAW
+--
+-- Processing logic:
+--   1. Generate a unique RUN_ID from timestamp + table short code.
+--   2. Fetch active rules from DQ_RULES for the given source table.
+--   3. For each rule, count rows_checked vs rows_failed (today only).
+--   4. Write per-rule results to DQ_RESULTS.
+--   5. Build a combined pass-condition from all rules.
+--   6. Delete today's snapshot from the CLEAN table (idempotent reload).
+--   7. INSERT into CLEAN only records that pass all rules.
+--      - VEHICLE_EVENTS_RAW gets special handling: DATE_VALUES is
+--        normalized via NORMALIZE_EVENT_DATE() during the CLEAN load.
+--   8. Return a summary string with RUN_ID, counts, and CLEAN row total.
+--
+-- Dependencies:
+--   - AUTOPULSE_AI.DQ.DQ_RULES          (must be populated before first call)
+--   - AUTOPULSE_AI.DQ.DQ_RESULTS        (write target)
+--   - AUTOPULSE_AI.DQ.NORMALIZE_EVENT_DATE (UDF, used for VEHICLE_EVENTS)
+--   - AUTOPULSE_AI.RAW.*_RAW            (source tables)
+--   - AUTOPULSE_AI.CLEAN.*_CLEAN        (target tables)
+--
+-- Execution role:
+--   Runs as OWNER (EXECUTE AS OWNER). The owning role must have
+--   SELECT on RAW, INSERT/DELETE on CLEAN, and INSERT on DQ_RESULTS.
+--
+-- Language: JavaScript (Snowflake Scripting)
+-- ============================================================================
 
 USE ROLE SYSADMIN;
 USE WAREHOUSE AUTOPULSE_WH;

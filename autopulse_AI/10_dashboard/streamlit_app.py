@@ -69,6 +69,24 @@ if session:
         WH = session.sql("SELECT CURRENT_WAREHOUSE()").collect()[0][0] or WH
     except Exception:
         pass
+    try:
+        session.sql(f"USE WAREHOUSE {WH}").collect()
+    except Exception as e:
+        current_role = "UNKNOWN"
+        try:
+            current_role = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+        except Exception:
+            pass
+        st.error(
+            f"**Warehouse Access Error**\n\n"
+            f"The warehouse `{WH}` does not exist or the current role "
+            f"`{current_role}` does not have USAGE on it.\n\n"
+            f"**To fix:** run one of the following as ACCOUNTADMIN:\n"
+            f"```sql\nGRANT USAGE ON WAREHOUSE {WH} TO ROLE {current_role};\n```\n"
+            f"Or switch this workspace to a role that already has access "
+            f"(e.g. ACCOUNTADMIN, AUTOPULSE_VIEWER, AUTOPULSE_COMMON)."
+        )
+        st.stop()
 
 # -----------------------------
 # PREMIUM DARK THEME
